@@ -242,6 +242,7 @@ private:
 };
 
 template <typename Data = void>
+requires (!std::is_reference_v<Data>)
 class Promise;
 
 template <typename Data = void>
@@ -299,6 +300,7 @@ private:
 };
 
 template <typename Data>
+requires (!std::is_reference_v<Data>)
 class Promise {
 public:
 
