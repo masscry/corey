@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 #include <stdexcept>
+#include <tuple>
 
 TEST(PromiseFuture, PromiseFutureSet) {
     corey::Promise<int> test;
@@ -116,10 +117,7 @@ TEST(PromiseFuture, PromiseSetVoidExceptionFuture) {
     EXPECT_TRUE(fut.is_ready());
     EXPECT_TRUE(fut.has_failed());
 
-    EXPECT_THROW(
-        {(void)fut.get();},
-        std::runtime_error
-    );
+    EXPECT_THROW({ fut.get(); }, std::runtime_error);
 }
 
 TEST(PromiseFuture, PromiseSetNegativeValue) {
@@ -181,3 +179,58 @@ TEST(PromiseFuture, PromiseSetExceptionMultipleTimesVoid) {
     );
 }
 
+class MyClass {
+public:
+    MyClass(int value) : value_(value) {}
+
+    int getValue() const {
+        return value_;
+    }
+
+private:
+    int value_;
+};
+
+TEST(PromiseFuture, PromiseSetNonBasicClass) {
+    corey::Promise<MyClass> test;
+
+    MyClass obj(42);
+    test.set(obj);
+
+    auto fut = test.get_future();
+
+    EXPECT_TRUE(fut.is_ready());
+    EXPECT_FALSE(fut.has_failed());
+
+    MyClass result = fut.get();
+    EXPECT_EQ(result.getValue(), 42);
+}
+
+TEST(PromiseFuture, PromiseSetNonCopyableClass) {
+    corey::Promise<std::unique_ptr<MyClass>> test;
+
+    std::unique_ptr<MyClass> obj = std::make_unique<MyClass>(42);
+    test.set(std::move(obj));
+
+    auto fut = test.get_future();
+
+    EXPECT_TRUE(fut.is_ready());
+    EXPECT_FALSE(fut.has_failed());
+
+    std::unique_ptr<MyClass> result = fut.get();
+    EXPECT_EQ(result->getValue(), 42);
+}
+
+TEST(PromiseFuture, PromiseSetNonCopyableClassException) {
+    corey::Promise<std::unique_ptr<MyClass>> test;
+
+    std::unique_ptr<MyClass> obj = std::make_unique<MyClass>(42);
+    test.set_exception(std::make_exception_ptr(std::runtime_error("test")));
+
+    auto fut = test.get_future();
+
+    EXPECT_TRUE(fut.is_ready());
+    EXPECT_TRUE(fut.has_failed());
+
+    EXPECT_THROW({ std::ignore = fut.get(); }, std::runtime_error);
+}

@@ -266,7 +266,14 @@ public:
 
     ~Future() = default;
 
-    auto get() { return this->state->get(); }
+    [[nodiscard]]
+    Data get() {
+        if constexpr (std::is_void_v<Data>) {
+            this->state->get();
+        } else {
+            return std::move(this->state->get());
+        }
+    }
 
     [[nodiscard]]
     auto get_exception() noexcept { return this->state->get_exception(); }
