@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.22)
 project(corey
     VERSION 0.1
     LANGUAGES CXX
-    DESCRIPTION "An coroutine-based game engine"
+    DESCRIPTION "A coroutine-based game engine"
 )
 
 include(FetchContent)
@@ -26,4 +26,3 @@ target_include_directories(setup
 add_subdirectory(lib)
 add_subdirectory(src)
 add_subdirectory(tests)
-
