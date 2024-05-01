@@ -14,6 +14,7 @@ target_sources(base_test
         test_base.cc
         test_future_promise.cc
         test_task.cc
+        test_reactor.cc
 )
 
 target_link_libraries(base_test
