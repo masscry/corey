@@ -1,7 +1,7 @@
 
 message(STATUS "Fetching Google Tests")
-FetchContent_Declare(
-    googletest
+FetchContent_Declare(googletest
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.tar.gz
 )
 

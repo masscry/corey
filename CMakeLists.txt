@@ -15,7 +15,7 @@ target_compile_features(setup INTERFACE cxx_std_20)
 target_compile_options(setup
     INTERFACE
         -Wall -Wextra -Werror
-        $<$<CXX_COMPILER_ID:GNU>:-fdiagnostics-color=always>
+        $<$<CXX_COMPILER_ID:GNU>:-fdiagnostics-color=always;-Wno-error=parentheses>
         $<$<CXX_COMPILER_ID:Clang>:-fcolor-diagnostics>
 )
 target_include_directories(setup
