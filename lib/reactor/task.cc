@@ -2,6 +2,6 @@
 
 namespace corey {
 
-Task::Model::~Model() = default;
+Executable::~Executable() = default;
 
 } // namespace corey
