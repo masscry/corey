@@ -10,6 +10,10 @@
 
 namespace corey {
 
+struct Yield {};
+
+inline constexpr Yield yield() { return {}; }
+
 template<typename Self>
 struct BaseCoroPromise {
     auto get_return_object() {
@@ -52,6 +56,18 @@ struct BaseCoroPromise {
         static_cast<Self*>(this)->_promise.set_exception(exp);
         return Awaiter{};
     }
+
+    auto await_transform(Yield) {
+        struct Awaiter {
+            constexpr bool await_ready() const noexcept { return false; }
+            void await_suspend(std::coroutine_handle<> handle) noexcept {
+                corey::Reactor::instance().add(make_task([handle]() { handle.resume(); }));
+            }
+            constexpr void await_resume() noexcept {}
+        };
+        return Awaiter{};
+    }
+
 };
 
 template<typename Data>
