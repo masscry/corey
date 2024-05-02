@@ -1,3 +1,6 @@
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_compile_options( -Wno-error=restrict)
+endif()
 
 message(STATUS "Fetching Google Tests")
 FetchContent_Declare(googletest
