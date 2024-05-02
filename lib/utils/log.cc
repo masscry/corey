@@ -38,8 +38,7 @@ bool Log::is_active(Log::Level level) const {
 }
 
 void Log::put(Log::Level level, std::string_view text) const {
-    auto line = fmt::format("[{}][{}] {}: {}\n", std::chrono::system_clock::now(), level, this->name, text);
-    sink.write(line);
+    sink.write(fmt::format("[{}][{}] {}: {}\n", std::chrono::system_clock::now(), level, this->name, text));
 }
 
 } // namespace corey
