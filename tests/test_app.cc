@@ -269,3 +269,45 @@ TEST(Application, CheckAppPositionalWithDefault) {
     });
     EXPECT_EQ(result, 0);
 }
+
+TEST(Application, CheckSleepTimeout) {
+    using namespace std::chrono_literals;
+
+    corey::Application app(0, nullptr);
+    auto result = app.run([](const corey::ParseResult&) -> corey::Future<int> {
+        auto start = std::chrono::steady_clock::now();
+        co_await corey::sleep(1s);
+        auto end = std::chrono::steady_clock::now();
+        EXPECT_GE(end - start, 1s);
+        co_return 0;
+    });
+    EXPECT_EQ(result, 0);
+}
+
+TEST(Application, CheckSleepZeroTimeout) {
+    using namespace std::chrono_literals;
+
+    corey::Application app(0, nullptr);
+    auto result = app.run([](const corey::ParseResult&) -> corey::Future<int> {
+        auto start = std::chrono::steady_clock::now();
+        co_await corey::sleep(0s);
+        auto end = std::chrono::steady_clock::now();
+        EXPECT_LE(end - start, 1ms);
+        co_return 0;
+    });
+    EXPECT_EQ(result, 0);
+}
+
+TEST(Application, CheckSleepNegativeTimeout) {
+    using namespace std::chrono_literals;
+
+    corey::Application app(0, nullptr);
+    try {
+        app.run([](const corey::ParseResult&) -> corey::Future<int> {
+            co_await corey::sleep(-1s);
+            co_return 0;
+        });
+    } catch (const std::system_error& e) {
+        EXPECT_EQ(e.code().value(), EINVAL);
+    }
+}
