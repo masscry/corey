@@ -119,7 +119,7 @@ TEST(Application, CheckAppInfoHelp) {
         args,
         corey::ApplicationInfo{.name="test", .version="1.0"}
     );
-    auto result = app.run([](const corey::ParseResult& opts) -> corey::Future<int> {
+    auto result = app.run([](const corey::ParseResult&) -> corey::Future<int> {
         ADD_FAILURE() << "This code should not be executed";
         co_return 0;
     });
@@ -136,7 +136,7 @@ TEST(Application, CheckAppInfoVersion) {
         args,
         corey::ApplicationInfo{.name="test", .version="1.0"}
     );
-    auto result = app.run([](const corey::ParseResult& opts) -> corey::Future<int> {
+    auto result = app.run([](const corey::ParseResult&) -> corey::Future<int> {
         ADD_FAILURE() << "This code should not be executed";
         co_return 0;
     });
