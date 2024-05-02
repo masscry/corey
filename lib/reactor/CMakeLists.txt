@@ -12,6 +12,6 @@ target_link_libraries(reactor PUBLIC
     common
     corey::io
 )
-target_include_directories(reactor INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(reactor PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(corey::reactor ALIAS reactor)

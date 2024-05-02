@@ -1,23 +1,43 @@
-#include "reactor.hh"
+#include "reactor/reactor.hh"
+#include "reactor/coroutine.hh"
 #include "utils/common.hh"
 
 namespace corey {
 
-Reactor::Reactor() = default;
-Reactor::Reactor(Reactor&&) = default;
+namespace {
+
+Reactor* g_instance = nullptr;
+
+}
+
+Reactor& Reactor::instance() {
+    if (!g_instance) {
+        panic("No active reactor");
+    }
+    return *g_instance;
+}
+
+Reactor::Reactor() {
+    COREY_ASSERT(!g_instance);
+    g_instance = this;
+}
 
 Reactor::~Reactor() {
     COREY_ASSERT(_tasks.empty());
+    COREY_ASSERT(_routines.empty());
+    g_instance = nullptr;
 }
-
-Reactor& Reactor::operator=(Reactor&&) = default;
 
 void Reactor::run() {
     for (auto& routine: _routines) {
         routine.second.execute();
     }
-    while (!_tasks.empty()) {
-        _tasks.front().execute_and_dispose();
+    for (auto task = _tasks.begin(); task != _tasks.end();) {
+        auto next = std::next(task);
+        if (task->try_execute_once()) {
+            _tasks.erase_and_dispose(task, [](Task* task) { delete task; });
+        }
+        task = next;
     }
 }
 

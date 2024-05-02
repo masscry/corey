@@ -14,11 +14,14 @@ class Reactor {
     using RoutineList = boost::container::flat_map<int, Routine>;
 public:
 
+    static
+    Reactor& instance();
+
     Reactor();
     Reactor(const Reactor&) = delete;
     Reactor& operator=(const Reactor&) = delete;
-    Reactor(Reactor&&);
-    Reactor& operator=(Reactor&&);
+    Reactor(Reactor&&) = delete;
+    Reactor& operator=(Reactor&&) = delete;
     ~Reactor();
 
     void run();

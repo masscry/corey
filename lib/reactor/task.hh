@@ -11,6 +11,7 @@ namespace corey {
 
 struct Executable {
     virtual void execute() = 0;
+    virtual bool is_ready() const noexcept = 0;
     virtual ~Executable() = 0;
 };
 using UPExecutable = std::unique_ptr<Executable>;
@@ -28,19 +29,14 @@ public:
     Task& operator=(Task&& other) noexcept = default;
     ~Task() = default;
 
-    void execute_and_dispose() noexcept {
+    bool try_execute_once() {
+        if (!_model->is_ready()) {
+            return false;
+        }
         _model->execute();
-        delete this;
+        return true;
     }
 
-    void execute_once() {
-        _model->execute();
-        _model.reset();
-    }
-
-    bool is_good() const noexcept {
-        return static_cast<bool>(_model);
-    }
 
     Executable& get_impl() noexcept { return *_model; }
 
@@ -80,22 +76,41 @@ private:
 
 template<typename Func>
 auto make_task(Func&& func) {
-    struct Lambda : public Executable{
+    struct SimpleTask : public Executable{
         Func _func;
-        Lambda(Func&& func) : _func(std::forward<Func>(func)) {}
+        SimpleTask(Func&& func) : _func(std::forward<Func>(func)) {}
         void execute() override { _func(); }
+        bool is_ready() const noexcept override { return true; }
     };
-    return Task::make<Lambda>(std::forward<Func>(func));
+    return Task::make<SimpleTask>(std::forward<Func>(func));
+}
+
+template<typename ExeFunc, typename IsReadyFunc>
+auto make_task(ExeFunc&& exeFunc, IsReadyFunc&& isReadyFunc) {
+    struct MaybeReadyTask : public Executable {
+        ExeFunc _exeFunc;
+        IsReadyFunc _isReadyFunc;
+        MaybeReadyTask(ExeFunc&& exeFunc, IsReadyFunc&& isReadyFunc)
+            : _exeFunc(std::forward<ExeFunc>(exeFunc))
+            , _isReadyFunc(std::forward<IsReadyFunc>(isReadyFunc)) {}
+        void execute() override { _exeFunc(); }
+        bool is_ready() const noexcept override { return _isReadyFunc(); }
+    };
+    return Task::make<MaybeReadyTask>(
+        std::forward<ExeFunc>(exeFunc),
+        std::forward<IsReadyFunc>(isReadyFunc)
+    );
 }
 
 template<typename Func>
 auto make_routine(Func&& func) {
-    struct Lambda : public Executable {
+    struct SimpleRoutine : public Executable {
         Func _func;
-        Lambda(Func&& func) : _func(std::forward<Func>(func)) {}
+        SimpleRoutine(Func&& func) : _func(std::forward<Func>(func)) {}
         void execute() override { _func(); }
+        bool is_ready() const noexcept override { return true; }
     };
-    return Routine::make<Lambda>(std::forward<Func>(func));
+    return Routine::make<SimpleRoutine>(std::forward<Func>(func));
 }
 
 } // namespace corey
