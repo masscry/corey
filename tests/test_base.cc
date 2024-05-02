@@ -86,6 +86,38 @@ TEST(LogTest, Simple) {
     test.info("hello!");
 }
 
+TEST(LogTest, LogLevelTextFormatting) {
+    auto debug = fmt::format("{}", corey::Log::Level::debug);
+    EXPECT_EQ(debug, "debug");
+
+    auto info = fmt::format("{}", corey::Log::Level::info);
+    EXPECT_EQ(info, "info");
+
+    auto warn = fmt::format("{}", corey::Log::Level::warn);
+    EXPECT_EQ(warn, "warn");
+
+    auto error = fmt::format("{}", corey::Log::Level::error);
+    EXPECT_EQ(error, "error");
+}
+
+TEST(LogTest, LogConstructor) {
+    corey::Log test("test");
+    EXPECT_EQ(test.get_name(), "test");
+    EXPECT_EQ(test.get_level(), corey::Log::Level::info);
+
+    corey::Log test1("test1", corey::Log::Level::warn);
+    EXPECT_EQ(test1.get_name(), "test1");
+    EXPECT_EQ(test1.get_level(), corey::Log::Level::warn);
+
+    corey::Log test2("test2", corey::Sink<void>::make<MockConsole>());
+    EXPECT_EQ(test2.get_name(), "test2");
+    EXPECT_EQ(test2.get_level(), corey::Log::Level::info);
+
+    corey::Log test3("test3", corey::Log::Level::error, corey::Sink<void>::make<MockConsole>());
+    EXPECT_EQ(test3.get_name(), "test3");
+    EXPECT_EQ(test3.get_level(), corey::Log::Level::error);
+}
+
 TEST(LogTest, Assert) {
     EXPECT_DEATH({ corey::panic("at the disco"); }, ".*");
     EXPECT_DEATH({ std::ignore = COREY_ASSERT(false); }, ".*");

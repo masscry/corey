@@ -40,7 +40,7 @@ TEST_F(ApplicationTest, RunReadFromZero) {
         for (auto c : data) {
             sum += c;
         }
-        co_await std::move(file).close();
+        co_await file.close();
         co_return sum;
     });
     EXPECT_EQ(result, 0);
@@ -54,7 +54,7 @@ TEST_F(ApplicationTest, RunWriteToNull) {
             c = 42;
         }
         co_await file.write(0, data);
-        co_await std::move(file).close();
+        co_await file.close();
         co_return 0;
     });
     EXPECT_EQ(result, 0);
@@ -66,7 +66,7 @@ TEST_F(ApplicationTest, RunReadFromNonExistent) {
             auto file = co_await corey::File::open("/nonexistent", O_RDONLY);
             std::array<char, 100> data;
             co_await file.read(0, data);
-            co_await std::move(file).close();
+            co_await file.close();
             co_return 0;
         });
     } catch (const std::system_error& e) {
@@ -86,9 +86,49 @@ TEST_F(ApplicationTest, RunWriteToReadOnly) {
         } catch (const std::system_error& e) {
             EXPECT_EQ(e.code().value(), EBADF);
         }
-        co_await std::move(file).close();
+        co_await file.close();
         co_return 0;
     });
+}
+
+TEST_F(ApplicationTest, RunFileFsync) {
+    auto result = app.run([](const corey::ParseResult&) -> corey::Future<int> {
+        auto file = co_await corey::File::open("/dev/zero", O_RDONLY);
+        try {
+            co_await file.fsync();
+        } catch (const std::system_error& e) {
+            EXPECT_EQ(e.code().value(), EINVAL);
+        }
+        co_await file.close();
+        co_return 0;
+    });
+    EXPECT_EQ(result, 0);
+}
+
+TEST_F(ApplicationTest, RunFileFdatasync) {
+    auto result = app.run([](const corey::ParseResult&) -> corey::Future<int> {
+        auto file = co_await corey::File::open("/dev/zero", O_RDONLY);
+        try {
+            co_await file.fdatasync();
+        } catch (const std::system_error& e) {
+            EXPECT_EQ(e.code().value(), EINVAL);
+        }
+        co_await file.close();
+        co_return 0;
+    });
+    EXPECT_EQ(result, 0);
+}
+
+TEST_F(ApplicationTest, RunFileMoveAssignmentOperator) {
+    auto result = app.run([](const corey::ParseResult&) -> corey::Future<int> {
+        auto file = co_await corey::File::open("/dev/zero", O_RDONLY);
+        corey::File file2;
+
+        file2 = std::move(file);
+        co_await file2.close();
+        co_return 0;
+    });
+    EXPECT_EQ(result, 0);
 }
 
 TEST_F(ApplicationTest, RunYield) {

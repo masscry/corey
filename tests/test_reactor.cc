@@ -258,3 +258,13 @@ TEST_F(ReactorIOTest, IoEngineOpenReadOnly) {
     close(fd);
 }
 
+TEST(Reactor, ReactorTwiceInit) {
+    corey::Reactor reactor;
+    EXPECT_DEATH({ corey::Reactor reactor2; }, ".*");
+}
+
+TEST(Reactor, IoEngineTwiceInit) {
+    corey::Reactor reactor;
+    corey::IoEngine io(reactor);
+    EXPECT_DEATH({ corey::IoEngine io2(reactor); }, ".*");
+}
