@@ -15,14 +15,11 @@ public:
     File& operator=(File&& other) noexcept;
     ~File();
 
-    Future<> fsync();
-    Future<> fdatasync();
-    Future<> read(uint64_t offset, std::span<char>);
-    Future<> write(uint64_t offset, std::span<const char>);
-    Future<> close() &&;
-
-    void seek(std::size_t pos);
-    std::size_t tell() const;
+    Future<> fsync() const;
+    Future<> fdatasync() const;
+    Future<uint64_t> read(uint64_t offset, std::span<char>) const;
+    Future<uint64_t> write(uint64_t offset, std::span<const char>) const;
+    Future<> close();
 
 private:
     File(int fd);

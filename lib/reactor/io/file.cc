@@ -2,6 +2,8 @@
 
 #include "reactor/coroutine.hh"
 
+#include <cstdint>
+
 namespace corey {
 
 namespace {
@@ -45,41 +47,37 @@ File::~File() {
     }
 }
 
-Future<> File::fsync() {
+Future<> File::fsync() const {
     auto ret = co_await IoEngine::instance().fsync(_fd);
     if (ret < 0) {
         co_await std::make_exception_ptr(std::system_error(-ret, std::system_category(), "fsync failed"));
     }
 }
 
-Future<> File::fdatasync() {
+Future<> File::fdatasync() const {
     auto ret = co_await IoEngine::instance().fdatasync(_fd);
     if (ret < 0) {
         co_await std::make_exception_ptr(std::system_error(-ret, std::system_category(), "fdatasync failed"));
     }
 }
 
-Future<> File::read(uint64_t offset, std::span<char> data) {
+Future<uint64_t> File::read(uint64_t offset, std::span<char> data) const {
     auto result = co_await IoEngine::instance().read(_fd, offset, data);
     if (result < 0) {
         co_await std::make_exception_ptr(std::system_error(-result, std::system_category(), "read failed"));
     }
-    if (static_cast<uint64_t>(result) != data.size()) {
-        co_await std::make_exception_ptr(std::runtime_error(fmt::format("read failed: expected {} bytes, got {}", data.size(), result)));
-    }
+    co_return static_cast<uint64_t>(result);
 }
 
-Future<> File::write(uint64_t offset, std::span<const char> data) {
+Future<uint64_t> File::write(uint64_t offset, std::span<const char> data) const {
     auto result = co_await IoEngine::instance().write(_fd, offset, data);
     if (result < 0) {
         co_await std::make_exception_ptr(std::system_error(-result, std::system_category(), "write failed"));
     }
-    if (static_cast<uint64_t>(result) != data.size()) {
-        co_await std::make_exception_ptr(std::runtime_error(fmt::format("write failed: expected {} bytes, got {}", data.size(), result)));
-    }
+    co_return static_cast<uint64_t>(result);
 }
 
-Future<> File::close() && {
+Future<> File::close() {
     if (_fd == -1) {
         co_await std::make_exception_ptr(std::runtime_error("File already closed"));
     }
