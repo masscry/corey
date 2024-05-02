@@ -5,7 +5,7 @@
 
 #include <liburing.h>
 
-
+#include <linux/time_types.h>
 
 namespace corey {
 
@@ -33,6 +33,7 @@ public:
     Future<int> write(int fd, uint64_t offset, std::span<const char>);
     Future<int> writev(int fd, uint64_t offset, std::span<const iovec>);
     Future<int> close(int fd);
+    Future<int> timeout(__kernel_timespec*);
 
 private:
 

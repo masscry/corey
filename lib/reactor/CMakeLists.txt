@@ -6,6 +6,7 @@ target_sources(reactor
     PRIVATE
         reactor.cc
         task.cc
+        timer.cc
 )
 
 target_link_libraries(reactor PUBLIC

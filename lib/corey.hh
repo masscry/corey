@@ -5,6 +5,7 @@
 #include "reactor/reactor.hh"
 #include "reactor/task.hh"
 #include "reactor/coroutine.hh"
+#include "reactor/timer.hh"
 
 #include "common/sink.hh"
 #include "common/console.hh"

@@ -103,6 +103,10 @@ Future<int> IoEngine::close(int fd) {
     return prepare(io_uring_prep_close, fd)->get_future();
 }
 
+Future<int> IoEngine::timeout(__kernel_timespec* ts) {
+    return prepare(io_uring_prep_timeout, ts, 0, IORING_TIMEOUT_ABS)->get_future();
+}
+
 void IoEngine::submit_pending() {
     while(_pending > 0) {
         int ret = io_uring_submit(&_ring);
