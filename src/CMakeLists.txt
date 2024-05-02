@@ -1,12 +1,12 @@
 
-add_executable(demo)
+add_executable(demo-cp)
 
-target_sources(demo
+target_sources(demo-cp
     PRIVATE
-        demo.cc
+        demo-cp.cc
 )
 
-target_link_libraries(demo PRIVATE
+target_link_libraries(demo-cp PRIVATE
     corey::corey
 )
 
