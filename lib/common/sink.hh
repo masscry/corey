@@ -4,6 +4,7 @@
 #include <functional>
 #include <optional>
 #include <span>
+#include <string>
 
 namespace corey {
 
@@ -17,7 +18,7 @@ public:
     Sink(Sink<Impl>&& other) noexcept = default;
     ~Sink() = default;
 
-    int write(std::span<char> data) const {
+    int write(std::span<const char> data) const {
         return _impl.write(data);
     }
 
@@ -37,13 +38,13 @@ private:
 template<>
 class Sink<void> {
     struct Model {
-        virtual int write(std::span<char> data) const = 0;
+        virtual int write(std::span<const char> data) const = 0;
         virtual ~Model() = default;
     };
 
     template<typename Impl>
     struct SinkModel: public Model {
-        int write(std::span<char> data) const override { return _sink.write(data); }
+        int write(std::span<const char> data) const override { return _sink.write(data); }
 
         template<typename... Args>
         SinkModel(Args&&... args) : _sink(std::forward<Args>(args)...) { ; }
@@ -80,7 +81,7 @@ public:
         return static_cast<SinkModel<Impl>*>(_model.get())->get();
     }
 
-    int write(std::span<char> data) const {
+    int write(std::span<const char> data) const {
         return _model->write(data);
     }
 

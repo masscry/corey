@@ -1,5 +1,5 @@
-#include "common/sink.hh"
-#include "common/console.hh"
+#include "sink.hh"
+#include "console.hh"
 #include "utils/common.hh"
 #include "utils/log.hh"
 

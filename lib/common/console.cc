@@ -5,7 +5,7 @@
 
 namespace corey {
 
-std::size_t Console::write(std::span<char> buf) const {
+std::size_t Console::write(std::span<const char> buf) const {
     auto result = fwrite(buf.data(), sizeof(char), buf.size(), stdout);
     if (result != buf.size()) {
         throw std::system_error(errno, std::generic_category(), "console");

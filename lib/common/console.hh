@@ -8,7 +8,7 @@ namespace corey {
 
 class Console {
 public:
-    std::size_t write(std::span<char>) const;
+    std::size_t write(std::span<const char>) const;
 };
 
 } // namespace corey
