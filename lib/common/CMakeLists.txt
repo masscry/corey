@@ -1,7 +1,4 @@
-find_package(Boost 1.74 REQUIRED
-    COMPONENTS
-        program_options
-)
+find_package(Boost 1.74 REQUIRED)
 
 add_library(common)
 
