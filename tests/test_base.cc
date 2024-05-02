@@ -1,4 +1,3 @@
-#include "common.hh"
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
@@ -6,6 +5,7 @@
 #include "reactor/task.hh"
 #include "common/defer.hh"
 #include "common/sink.hh"
+#include "utils/common.hh"
 #include "utils/log.hh"
 
 #include <type_traits>
@@ -15,17 +15,17 @@
 
 class MockConsole {
 public:
-    MOCK_METHOD(int, write, (std::span<char> message), (const));
+    MOCK_METHOD(int, write, (std::span<const char> message), (const));
 };
 
-TEST(Log, MockConsoleSink) {
+TEST(LogTest, MockConsoleSink) {
     using ::testing::_;
 
     std::stringstream logStream;
     corey::Log test("test", corey::Sink<void>::make<MockConsole>());
     auto& console = test.get_sink().as<MockConsole>().get_impl();
     
-    ON_CALL(console, write(_)).WillByDefault([&logStream](std::span<char> message) {
+    ON_CALL(console, write(_)).WillByDefault([&logStream](std::span<const char> message) {
         logStream.write(message.data(), message.size());
         return message.size();
     });
@@ -60,7 +60,7 @@ TEST(Log, MockConsoleSink) {
     }
 }
 
-TEST(Log, LogLevelFiltering) {
+TEST(LogTest, LogLevelFiltering) {
     using ::testing::_;
 
     corey::Log test("test", corey::Sink<void>::make<MockConsole>());
@@ -81,37 +81,37 @@ TEST(Log, LogLevelFiltering) {
     test.error("This is an error message");
 }
 
-TEST(Log, Simple) {
+TEST(LogTest, Simple) {
     corey::Log test("test");
     test.info("hello!");
 }
 
-TEST(Log, Assert) {
+TEST(LogTest, Assert) {
     EXPECT_DEATH({ corey::panic("at the disco"); }, ".*");
     EXPECT_DEATH({ std::ignore = COREY_ASSERT(false); }, ".*");
     EXPECT_TRUE(COREY_ASSERT(true));
 }
 
-TEST(Log, Task) {
+TEST(LogTest, Task) {
     auto task = corey::make_task([]() {
         corey::Log log("task");
         log.info("hello!");
     });
-    task.execute_once();
+    task.try_execute_once();
 }
 
-TEST(Log, EmptyName) {
+TEST(LogTest, EmptyName) {
     EXPECT_DEATH({ corey::Log test(""); }, ".*");
 }
 
-TEST(Log, MultipleLogs) {
+TEST(LogTest, MultipleLogs) {
     corey::Log test("test");
     test.info("hello!");
     test.warn("world!");
     test.error("error!");
 }
 
-TEST(Log, LogLevels) {
+TEST(LogTest, LogLevels) {
     corey::Log test("test");
     test.info("info message");
     test.warn("warning message");
@@ -119,14 +119,14 @@ TEST(Log, LogLevels) {
     test.debug("debug message");
 }
 
-TEST(Log, LogWithArgs) {
+TEST(LogTest, LogWithArgs) {
     corey::Log test("test");
     test.info("Hello, {}", "world");
     test.warn("The answer is {}", 42);
     test.error("Something went wrong: {}", "unknown error");
 }
 
-TEST(Log, LogWithException) {
+TEST(LogTest, LogWithException) {
     corey::Log test("test");
     try {
         throw std::runtime_error("Exception occurred");
@@ -135,7 +135,7 @@ TEST(Log, LogWithException) {
     }
 }
 
-TEST(Defer, SingleDefer) {
+TEST(DeferTest, SingleDefer) {
     bool executed = false;
     {
         auto def = corey::defer([&]() noexcept {
@@ -145,7 +145,7 @@ TEST(Defer, SingleDefer) {
     EXPECT_TRUE(executed);
 }
 
-TEST(Defer, DeferWithCancel) {
+TEST(DeferTest, DeferWithCancel) {
     bool executed = false;
     {
         auto def = corey::defer([&]() noexcept {
@@ -156,7 +156,7 @@ TEST(Defer, DeferWithCancel) {
     EXPECT_FALSE(executed);
 }
 
-TEST(Defer, MultipleDefers) {
+TEST(DeferTest, MultipleDefers) {
     std::vector<int> values;
     {
         auto def = corey::defer([&]() noexcept {
@@ -175,7 +175,7 @@ TEST(Defer, MultipleDefers) {
     EXPECT_EQ(values[2], 1);
 }
 
-TEST(Defer, MultipleDefersWithCancel) {
+TEST(DeferTest, MultipleDefersWithCancel) {
     std::vector<int> values;
     {
         auto def = corey::defer([&]() noexcept {
@@ -194,7 +194,7 @@ TEST(Defer, MultipleDefersWithCancel) {
     EXPECT_EQ(values[1], 1);
 }
 
-TEST(Defer, MultipleDefersWithCancelAll) {
+TEST(DeferTest, MultipleDefersWithCancelAll) {
     std::vector<int> values;
     {
         auto def = corey::defer([&]() noexcept {
@@ -213,7 +213,7 @@ TEST(Defer, MultipleDefersWithCancelAll) {
     EXPECT_TRUE(values.empty());
 }
 
-TEST(Defer, DeferWithException) {
+TEST(DeferTest, DeferWithException) {
     bool executed = false;
     try {
         auto def = corey::defer([&]() noexcept {
@@ -224,7 +224,7 @@ TEST(Defer, DeferWithException) {
     EXPECT_TRUE(executed);
 }
 
-TEST(Defer, DeferWithExceptionAndCancel) {
+TEST(DeferTest, DeferWithExceptionAndCancel) {
     bool executed = false;
     try {
         auto def = corey::defer([&]() noexcept {
@@ -236,7 +236,7 @@ TEST(Defer, DeferWithExceptionAndCancel) {
     EXPECT_FALSE(executed);
 }
 
-TEST(Defer, DeferWithExceptionAndCancelMultiple) {
+TEST(DeferTest, DeferWithExceptionAndCancelMultiple) {
     std::vector<int> values;
     try {
         auto def = corey::defer([&]() noexcept {
@@ -256,7 +256,7 @@ TEST(Defer, DeferWithExceptionAndCancelMultiple) {
     EXPECT_EQ(values[1], 1);
 }
 
-TEST(Defer, DeferWithExceptionAndCancelAll) {
+TEST(DeferTest, DeferWithExceptionAndCancelAll) {
     std::vector<int> values;
     try {
         auto def = corey::defer([&]() noexcept {
@@ -276,7 +276,7 @@ TEST(Defer, DeferWithExceptionAndCancelAll) {
     EXPECT_TRUE(values.empty());
 }
 
-TEST(Defer, ReturnDeferFromFuncTypeErased) {
+TEST(DeferTest, ReturnDeferFromFuncTypeErased) {
     bool executed = false;
     {
         corey::Defer<> erased;
@@ -296,7 +296,7 @@ TEST(Defer, ReturnDeferFromFuncTypeErased) {
     EXPECT_TRUE(executed);
 }
 
-TEST(Defer, ReturnDeferFromFuncTypeErasedWithCancel) {
+TEST(DeferTest, ReturnDeferFromFuncTypeErasedWithCancel) {
     bool executed = false;
     {
         corey::Defer<> erased;
@@ -317,7 +317,7 @@ TEST(Defer, ReturnDeferFromFuncTypeErasedWithCancel) {
     EXPECT_FALSE(executed);
 }
 
-TEST(Defer, ReturnDeferFromFuncTypeErasedWithException) {
+TEST(DeferTest, ReturnDeferFromFuncTypeErasedWithException) {
     bool executed = false;
     try {
         corey::Defer<> erased;
@@ -336,7 +336,7 @@ TEST(Defer, ReturnDeferFromFuncTypeErasedWithException) {
     EXPECT_TRUE(executed);
 }
 
-TEST(Defer, ReturnDeferFromFuncTypeErasedWithExceptionAndCancel) {
+TEST(DeferTest, ReturnDeferFromFuncTypeErasedWithExceptionAndCancel) {
     bool executed = false;
     try {
         corey::Defer<> erased;
@@ -356,7 +356,7 @@ TEST(Defer, ReturnDeferFromFuncTypeErasedWithExceptionAndCancel) {
     EXPECT_FALSE(executed);
 }
 
-TEST(Defer, ReturnDeferFromFuncTypeErasedWithExceptionAndCancelMultiple) {
+TEST(DeferTest, ReturnDeferFromFuncTypeErasedWithExceptionAndCancelMultiple) {
     std::vector<int> values;
     try {
         corey::Defer<> erased;

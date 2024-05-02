@@ -9,37 +9,35 @@
 
 TEST(TaskTest, Execute) {
     bool executed = false;
-    auto func = [&executed]() { executed = true; };
-    auto task = corey::make_task(func);
-    task.execute_once();
+    auto task = corey::make_task([&executed]() { executed = true; });
+    task.try_execute_once();
     EXPECT_TRUE(executed);
 }
 
 TEST(TaskTest, MoveConstructor) {
     bool executed = false;
-    auto func = [&executed]() { executed = true; };
-    auto task1 = corey::make_task(func);
+    auto task1 = corey::make_task([&executed]() { executed = true; });
     auto task2 = std::move(task1);
-    task2.execute_once();
+    task2.try_execute_once();
     EXPECT_TRUE(executed);
 }
 
 TEST(TaskTest, MoveAssignmentOperator) {
     bool executed = false;
-    auto func = [&executed]() { executed = true; };
-    auto task1 = corey::make_task(func);
+    auto task1 = corey::make_task([&executed]() { executed = true; });
     corey::Task task2;
     task2 = std::move(task1);
-    task2.execute_once();
+    task2.try_execute_once();
     EXPECT_TRUE(executed);
 }
 
 class MockExecutable : public corey::Executable {
 public:
     MOCK_METHOD(void, execute, (), (override));
+    MOCK_METHOD(bool, is_ready, (), (const, noexcept, override));
 };
 
-TEST(Routine, Execute) {
+TEST(RoutineTest, Execute) {
     auto log = corey::Log("routine-execute");
 
     auto routine = corey::Routine::make<MockExecutable>();    
@@ -49,7 +47,7 @@ TEST(Routine, Execute) {
     routine.execute();
 }
 
-TEST(Routine, MoveConstructor) {
+TEST(RoutineTest, MoveConstructor) {
     auto log = corey::Log("routine-move-constructor");
 
     auto routine1 = corey::Routine::make<MockExecutable>();

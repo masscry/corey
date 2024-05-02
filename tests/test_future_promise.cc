@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <tuple>
 
-TEST(PromiseFuture, PromiseFutureSet) {
+TEST(PromiseFutureTest, PromiseFutureSet) {
     corey::Promise<int> test;
 
     auto fut = test.get_future();
@@ -24,7 +24,7 @@ TEST(PromiseFuture, PromiseFutureSet) {
     EXPECT_EQ(fut.get(), 100);
 }
 
-TEST(PromiseFuture, PromiseSetFuture) {
+TEST(PromiseFutureTest, PromiseSetFuture) {
     corey::Promise<int> test;
 
     test.set(150);
@@ -41,7 +41,7 @@ TEST(PromiseFuture, PromiseSetFuture) {
     EXPECT_EQ(fut.get(), 150);
 }
 
-TEST(PromiseFuture, BrokenPromiseFuture) {
+TEST(PromiseFutureTest, BrokenPromiseFuture) {
     std::optional<corey::Future<int>> fut;
 
     {
@@ -57,7 +57,7 @@ TEST(PromiseFuture, BrokenPromiseFuture) {
     }, corey::BrokenPromise);
 }
 
-TEST(PromiseFuture, PromiseSetExceptionFuture) {
+TEST(PromiseFutureTest, PromiseSetExceptionFuture) {
     corey::Promise<int> test;
 
     test.set_exception(std::make_exception_ptr(std::runtime_error("test")));
@@ -73,7 +73,7 @@ TEST(PromiseFuture, PromiseSetExceptionFuture) {
     );
 }
 
-TEST(PromiseFuture, PromiseVoidFutureSet) {
+TEST(PromiseFutureTest, PromiseVoidFutureSet) {
     corey::Promise<> test;
 
     auto fut = test.get_future();
@@ -92,7 +92,7 @@ TEST(PromiseFuture, PromiseVoidFutureSet) {
 
 }
 
-TEST(PromiseFuture, PromiseVoidSetFuture) {
+TEST(PromiseFutureTest, PromiseVoidSetFuture) {
     corey::Promise<> test;
     test.set();
 
@@ -107,7 +107,7 @@ TEST(PromiseFuture, PromiseVoidSetFuture) {
 
 }
 
-TEST(PromiseFuture, PromiseSetVoidExceptionFuture) {
+TEST(PromiseFutureTest, PromiseSetVoidExceptionFuture) {
     corey::Promise<> test;
 
     test.set_exception(std::make_exception_ptr(std::runtime_error("test")));
@@ -120,7 +120,7 @@ TEST(PromiseFuture, PromiseSetVoidExceptionFuture) {
     EXPECT_THROW({ fut.get(); }, std::runtime_error);
 }
 
-TEST(PromiseFuture, PromiseSetNegativeValue) {
+TEST(PromiseFutureTest, PromiseSetNegativeValue) {
     corey::Promise<int> test;
 
     test.set(-50);
@@ -133,7 +133,7 @@ TEST(PromiseFuture, PromiseSetNegativeValue) {
     EXPECT_EQ(fut.get(), -50);
 }
 
-TEST(PromiseFuture, PromiseSetZeroValue) {
+TEST(PromiseFutureTest, PromiseSetZeroValue) {
     corey::Promise<int> test;
 
     test.set(0);
@@ -146,20 +146,20 @@ TEST(PromiseFuture, PromiseSetZeroValue) {
     EXPECT_EQ(fut.get(), 0);
 }
 
-TEST(PromiseFuture, PromiseSetEmptyException) {
+TEST(PromiseFutureTest, PromiseSetEmptyException) {
     corey::Promise<int> test;
 
     EXPECT_THROW({test.set_exception(std::exception_ptr());}, std::invalid_argument);
 }
 
-TEST(PromiseFuture, PromiseVoidSetMultipleTimes) {
+TEST(PromiseFutureTest, PromiseVoidSetMultipleTimes) {
     corey::Promise<> test;
 
     test.set();
     EXPECT_THROW({test.set();}, corey::PromiseAlreadySatisfied);
 }
 
-TEST(PromiseFuture, PromiseSetExceptionMultipleTimes) {
+TEST(PromiseFutureTest, PromiseSetExceptionMultipleTimes) {
     corey::Promise<int> test;
 
     test.set_exception(std::make_exception_ptr(std::runtime_error("test")));
@@ -169,7 +169,7 @@ TEST(PromiseFuture, PromiseSetExceptionMultipleTimes) {
     );
 }
 
-TEST(PromiseFuture, PromiseSetExceptionMultipleTimesVoid) {
+TEST(PromiseFutureTest, PromiseSetExceptionMultipleTimesVoid) {
     corey::Promise<> test;
 
     test.set_exception(std::make_exception_ptr(std::runtime_error("test")));
@@ -191,7 +191,7 @@ private:
     int value_;
 };
 
-TEST(PromiseFuture, PromiseSetNonBasicClass) {
+TEST(PromiseFutureTest, PromiseSetNonBasicClass) {
     corey::Promise<MyClass> test;
 
     MyClass obj(42);
@@ -206,7 +206,7 @@ TEST(PromiseFuture, PromiseSetNonBasicClass) {
     EXPECT_EQ(result.getValue(), 42);
 }
 
-TEST(PromiseFuture, PromiseSetNonCopyableClass) {
+TEST(PromiseFutureTest, PromiseSetNonCopyableClass) {
     corey::Promise<std::unique_ptr<MyClass>> test;
 
     std::unique_ptr<MyClass> obj = std::make_unique<MyClass>(42);
@@ -221,7 +221,7 @@ TEST(PromiseFuture, PromiseSetNonCopyableClass) {
     EXPECT_EQ(result->getValue(), 42);
 }
 
-TEST(PromiseFuture, PromiseSetNonCopyableClassException) {
+TEST(PromiseFutureTest, PromiseSetNonCopyableClassException) {
     corey::Promise<std::unique_ptr<MyClass>> test;
 
     std::unique_ptr<MyClass> obj = std::make_unique<MyClass>(42);

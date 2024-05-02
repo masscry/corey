@@ -15,14 +15,14 @@ target_sources(base_test
         test_future_promise.cc
         test_task.cc
         test_reactor.cc
+        test_app.cc
 )
 
 target_link_libraries(base_test
     PRIVATE
         GTest::gtest_main
         GTest::gmock_main
-        corey::utils
-        corey::reactor
+        corey::corey
 )
 
 include(GoogleTest)
