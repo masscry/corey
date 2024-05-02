@@ -7,7 +7,6 @@ target_sources(demo
 )
 
 target_link_libraries(demo PRIVATE
-    corey::reactor
-    corey::utils
+    corey::corey
 )
 
