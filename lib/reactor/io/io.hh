@@ -1,9 +1,11 @@
 #pragma once
 
-#include "reactor.hh"
-#include <task.hh>
+#include "reactor/reactor.hh"
+#include "reactor/task.hh"
 
 #include <liburing.h>
+
+
 
 namespace corey {
 
@@ -12,6 +14,9 @@ constexpr auto max_events = 128u;
 class IoEngine {
 public:
 
+    static
+    IoEngine& instance();
+
     IoEngine(Reactor&);
     IoEngine(const IoEngine& other) = delete;
     IoEngine& operator=(const IoEngine& other) = delete;
@@ -19,8 +24,14 @@ public:
     IoEngine& operator=(IoEngine&& other) noexcept = delete;
     ~IoEngine();
 
+    Future<int> open(const char* path, int flags);
+    Future<int> open(const char* path, int flags, mode_t mode);
+    Future<int> fsync(int fd);
+    Future<int> fdatasync(int fd);
     Future<int> read(int fd, uint64_t offset, std::span<char>);
+    Future<int> readv(int fd, uint64_t offset, std::span<iovec>);
     Future<int> write(int fd, uint64_t offset, std::span<const char>);
+    Future<int> writev(int fd, uint64_t offset, std::span<const iovec>);
     Future<int> close(int fd);
 
 private:

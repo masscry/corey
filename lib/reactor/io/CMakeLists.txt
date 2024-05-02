@@ -41,7 +41,7 @@ add_dependencies(uring liburing)
 message(STATUS "${INSTALL_DIR}")
 
 add_library(io)
-target_sources(io PRIVATE io.cc)
+target_sources(io PRIVATE io.cc file.cc)
 target_link_libraries(io PUBLIC uring corey::reactor)
 target_include_directories(io
     INTERFACE

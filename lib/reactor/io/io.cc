@@ -1,21 +1,25 @@
 #include "io.hh"
 
-#include "common/macro.hh"
-#include "future.hh"
+#include <cstdint>
+#include <liburing.h>
 #include "liburing/io_uring.h"
+
+#include "common/macro.hh"
+#include "reactor/future.hh"
 #include "reactor/reactor.hh"
 #include "reactor/task.hh"
+#include "reactor/coroutine.hh"
 #include "utils/log.hh"
 #include "utils/common.hh"
 
+#include <exception>
+#include <fcntl.h>
 #include <system_error>
 #include <span>
 #include <utility>
 #include <memory>
 
 #include <fmt/std.h>
-
-#include <liburing.h>
 
 namespace corey {
 
@@ -28,9 +32,22 @@ static_assert(
     "Promise<int> must be the same size as io_uring data"
 );
 
+IoEngine* _instance = nullptr;
+
 } // namespace
 
+IoEngine& IoEngine::instance() {
+    if (!_instance) {
+        panic("IoEngine not initialized");
+    }
+    return *_instance;
+}
+
 IoEngine::IoEngine(Reactor& reactor) {
+    if (_instance) {
+        panic("IoEngine already initialized");
+    }
+
     if (int ret = io_uring_queue_init(max_events, &_ring, 0); ret != 0) {
         throw std::system_error(-ret, std::system_category(), "io_uring_queue_init failed");
     }
@@ -38,15 +55,44 @@ IoEngine::IoEngine(Reactor& reactor) {
         submit_pending();
         complete_ready();
     }));
+    _instance = this;
 }
 
 IoEngine::~IoEngine() {
     COREY_ASSERT(_pending == 0);
     io_uring_queue_exit(&_ring);
+    _instance = nullptr;
+}
+
+Future<int> IoEngine::open(const char* path, int flags) {
+    if ((flags & O_CREAT) || (flags & O_TMPFILE)) {
+        return make_exception_future<int>(std::make_exception_ptr(std::invalid_argument("missing mode for open")));
+    }
+    return open(path, flags, 0);
+}
+
+Future<int> IoEngine::open(const char* path, int flags, mode_t mode) {
+    return prepare(io_uring_prep_openat, AT_FDCWD, path, flags, mode)->get_future();
+}
+
+Future<int> IoEngine::fsync(int fd) {
+    return prepare(io_uring_prep_fsync, fd, 0)->get_future();
+}
+
+Future<int> IoEngine::fdatasync(int fd) {
+    return prepare(io_uring_prep_fsync, fd, IORING_FSYNC_DATASYNC)->get_future();
 }
 
 Future<int> IoEngine::read(int fd, uint64_t offset, std::span<char> data) {
     return prepare(io_uring_prep_read, fd, data.data(), data.size(), offset)->get_future();
+}
+
+Future<int> IoEngine::readv(int fd, uint64_t offset, std::span<iovec> iov) {
+    return prepare(io_uring_prep_readv, fd, iov.data(), iov.size(), offset)->get_future();
+}
+
+Future<int> IoEngine::writev(int fd, uint64_t offset, std::span<const iovec> iov) {
+    return prepare(io_uring_prep_writev, fd, iov.data(), iov.size(), offset)->get_future();
 }
 
 Future<int> IoEngine::write(int fd, uint64_t offset, std::span<const char> data) {
