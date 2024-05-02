@@ -90,3 +90,182 @@ TEST_F(ApplicationTest, RunWriteToReadOnly) {
         co_return 0;
     });
 }
+
+TEST_F(ApplicationTest, RunYield) {
+    auto result = app.run([](const corey::ParseResult&) -> corey::Future<int> {
+        co_await corey::yield();
+        co_return 42;
+    });
+    EXPECT_EQ(result, 42);
+}
+
+TEST(Application, CheckAppInfo) {
+    corey::Application app(0, nullptr, corey::ApplicationInfo{.name="test", .version= "1.0"});
+    auto result = app.run([](const corey::ParseResult& opts) -> corey::Future<int> {
+        EXPECT_EQ(opts.count("help"), 0);
+        EXPECT_EQ(opts.count("version"), 0);
+        co_return 0;
+    });
+    EXPECT_EQ(result, 0);
+}
+
+TEST(Application, CheckAppInfoHelp) {
+    char* args[] = {
+        const_cast<char*>("test"),
+        const_cast<char*>("--help")
+    };
+    corey::Application app(
+        std::extent_v<decltype(args)>,
+        args,
+        corey::ApplicationInfo{.name="test", .version="1.0"}
+    );
+    auto result = app.run([](const corey::ParseResult& opts) -> corey::Future<int> {
+        ADD_FAILURE() << "This code should not be executed";
+        co_return 0;
+    });
+    EXPECT_EQ(result, 0);
+}
+
+TEST(Application, CheckAppInfoVersion) {
+    char* args[] = {
+        const_cast<char*>("test"),
+        const_cast<char*>("--version")
+    };
+    corey::Application app(
+        std::extent_v<decltype(args)>,
+        args,
+        corey::ApplicationInfo{.name="test", .version="1.0"}
+    );
+    auto result = app.run([](const corey::ParseResult& opts) -> corey::Future<int> {
+        ADD_FAILURE() << "This code should not be executed";
+        co_return 0;
+    });
+    EXPECT_EQ(result, 0);
+}
+
+TEST(Application, CheckAppCustomOption) {
+    char* args[] = {
+        const_cast<char*>("test"),
+        const_cast<char*>("--custom_opt=test")
+    };
+    corey::Application app(
+        std::extent_v<decltype(args)>,
+        args,
+        corey::ApplicationInfo{.name="test", .version="1.0"}
+    );
+
+    app.add_options()("custom_opt", "Custom option", cxxopts::value<std::string>());
+
+    auto result = app.run([](const corey::ParseResult& opts) -> corey::Future<int> {
+        EXPECT_EQ(opts.count("custom_opt"), 1);
+        EXPECT_EQ(opts["custom_opt"].as<std::string>(), "test");
+        co_return 0;
+    });
+    EXPECT_EQ(result, 0);
+}
+
+TEST(Application, CheckAppCustomOptionWithDefault) {
+    char* args[] = {
+        const_cast<char*>("test")
+    };
+    corey::Application app(
+        std::extent_v<decltype(args)>,
+        args,
+        corey::ApplicationInfo{.name="test", .version="1.0"}
+    );
+
+    app.add_options()("custom_opt", "Custom option", cxxopts::value<std::string>()->default_value("default"));
+
+    auto result = app.run([](const corey::ParseResult& opts) -> corey::Future<int> {
+        EXPECT_EQ(opts.count("custom_opt"), 0);
+        EXPECT_EQ(opts["custom_opt"].as<std::string>(), "default");
+        co_return 0;
+    });
+    EXPECT_EQ(result, 0);
+}
+
+TEST(Application, CheckAppCustomIntOption) {
+    char* args[] = {
+        const_cast<char*>("test"),
+        const_cast<char*>("--custom_int_opt=42")
+    };
+    corey::Application app(
+        std::extent_v<decltype(args)>,
+        args,
+        corey::ApplicationInfo{.name="test", .version="1.0"}
+    );
+
+    app.add_options()("custom_int_opt", "Custom int option", cxxopts::value<int>());
+
+    auto result = app.run([](const corey::ParseResult& opts) -> corey::Future<int> {
+        EXPECT_EQ(opts.count("custom_int_opt"), 1);
+        EXPECT_EQ(opts["custom_int_opt"].as<int>(), 42);
+        co_return 0;
+    });
+    EXPECT_EQ(result, 0);
+}
+
+TEST(Application, CheckAppCustomIntOptionWithDefault) {
+    char* args[] = {
+        const_cast<char*>("test")
+    };
+    corey::Application app(
+        std::extent_v<decltype(args)>,
+        args,
+        corey::ApplicationInfo{.name="test", .version="1.0"}
+    );
+
+    app.add_options()("custom_int_opt", "Custom int option", cxxopts::value<int>()->default_value("42"));
+
+    auto result = app.run([](const corey::ParseResult& opts) -> corey::Future<int> {
+        EXPECT_EQ(opts.count("custom_int_opt"), 0);
+        EXPECT_EQ(opts["custom_int_opt"].as<int>(), 42);
+        co_return 0;
+    });
+    EXPECT_EQ(result, 0);
+}
+
+TEST(Application, CheckAppPositional) {
+    char* args[] = {
+        const_cast<char*>("test"),
+        const_cast<char*>("positional")
+    };
+    corey::Application app(
+        std::extent_v<decltype(args)>,
+        args,
+        corey::ApplicationInfo{.name="test", .version="1.0"}
+    );
+
+    app.add_options()("positional", "Positional argument", cxxopts::value<std::string>());
+
+    app.add_positional_options("positional");
+
+    auto result = app.run([](const corey::ParseResult& opts) -> corey::Future<int> {
+        EXPECT_EQ(opts.count("positional"), 1);
+        EXPECT_EQ(opts["positional"].as<std::string>(), "positional");
+        co_return 0;
+    });
+    EXPECT_EQ(result, 0);
+}
+
+TEST(Application, CheckAppPositionalWithDefault) {
+    char* args[] = {
+        const_cast<char*>("test")
+    };
+    corey::Application app(
+        std::extent_v<decltype(args)>,
+        args,
+        corey::ApplicationInfo{.name="test", .version="1.0"}
+    );
+
+    app.add_options()("positional", "Positional argument", cxxopts::value<std::string>()->default_value("default"));
+
+    app.add_positional_options("positional");
+
+    auto result = app.run([](const corey::ParseResult& opts) -> corey::Future<int> {
+        EXPECT_EQ(opts.count("positional"), 0);
+        EXPECT_EQ(opts["positional"].as<std::string>(), "default");
+        co_return 0;
+    });
+    EXPECT_EQ(result, 0);
+}
