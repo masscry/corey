@@ -17,6 +17,7 @@ Application::Application(int argc, char* argv[], ApplicationInfo&& info)
     _options.add_options()
         ("h,help", "Print help")
         ("v,version", "Print version");
+    _options.show_positional_help();
 }
 
 Application::~Application() { ; }

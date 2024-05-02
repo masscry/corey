@@ -44,6 +44,8 @@ public:
     template<typename... Args>
     void add_positional_options(Args&&... args);
 
+    void set_positional_help(const std::string& help);
+
     template<MainFunc Func>
     int run(Func&& func);
 
@@ -69,6 +71,10 @@ inline cxxopts::OptionAdder Application::add_options() {
 template<typename... Args>
 inline void Application::add_positional_options(Args&&... args) {
     _options.parse_positional(std::forward<Args>(args)...);
+}
+
+inline void Application::set_positional_help(const std::string& help) {
+    _options.positional_help(help);
 }
 
 template<MainFunc Func>
