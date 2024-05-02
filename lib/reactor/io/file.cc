@@ -8,8 +8,6 @@ namespace corey {
 
 namespace {
 
-Log logger("io/file");
-
 } // namespace
 
 Future<File> File::open(const char* path, int flags) {
@@ -26,8 +24,8 @@ Future<File> File::open(const char* path, int flags, mode_t mode) {
 
 constexpr int invalid_fd = -1;
 
-File::File() noexcept : File(invalid_fd) { logger.debug("File()"); }
-File::File(int fd) : _fd(fd) { logger.debug("File({})", fd); }
+File::File() noexcept : File(invalid_fd) { }
+File::File(int fd) : _fd(fd) {}
 
 File::File(File&& other) noexcept: _fd(other._fd) {
     other._fd = invalid_fd;

@@ -20,10 +20,12 @@ public:
         error = 3
     };
 
+    std::string get_name() const { return name; }
+    Level get_level() const { return filter_level; }
+    const Sink<>& get_sink() const { return sink; }
+
     Level set_level(Level);
     Sink<> set_sink(Sink<>&&);
-
-    const Sink<>& get_sink() const { return sink; }
 
     Log(std::string_view name);
     Log(std::string_view, Level);

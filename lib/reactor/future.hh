@@ -371,12 +371,12 @@ private:
     IntrusivePtr<State<Data>> state;
 };
 
-template<typename DataFut, typename... Args>
+template<typename DataFut = void, typename... Args>
 Future<DataFut> make_ready_future(Args&&... args) {
     return Future<DataFut>(IntrusivePtr<State<DataFut>>(new State<DataFut>(std::forward<Args>(args)...)));
 }
 
-template<typename DataFut>
+template<typename DataFut = void>
 Future<DataFut> make_exception_future(std::exception_ptr exc) {
     return Future<DataFut>(IntrusivePtr<State<DataFut>>(new State<DataFut>(std::move(exc))));
 }
