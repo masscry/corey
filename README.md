@@ -1,5 +1,7 @@
 # Corey (WORK IN PROGRESS)
 
+[![Build](https://github.com/masscry/corey/actions/workflows/cmake-single-platform.yml/badge.svg)](https://github.com/masscry/corey/actions/workflows/cmake-single-platform.yml)
+
 ## Description
 
 Corey is a simple async framework that allows you to build asynchronous applications in C++. It provides a lightweight API for handling asynchronous tasks and managing concurrency. We are using io_uring to process IO requests and stackless C++20 coroutines for user code.
