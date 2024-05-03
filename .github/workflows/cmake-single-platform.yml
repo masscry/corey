@@ -22,7 +22,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        sudo apt-get update && sudo apt-get install -y libboost-dev 
+        sudo apt-get update && sudo apt-get install -y libboost-dev lcov 
         sudo pip3 install lcov_cobertura
 
     - name: Configure CMake
