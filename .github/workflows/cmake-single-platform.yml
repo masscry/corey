@@ -8,7 +8,7 @@ on:
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-  BUILD_TYPE: Release
+  BUILD_TYPE: Debug
 
 jobs:
   build:
@@ -21,17 +21,37 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get install -y libboost-dev 
+      run: |
+        sudo apt-get update && sudo apt-get install -y libboost-dev 
+        sudo pip3 install lcov_cobertura
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCOREY_ENABLE_COVERAGE=TRUE
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
     - name: Test
       working-directory: ${{github.workspace}}/build
-      # Execute tests defined by the CMake configuration.
-      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: ctest -C ${{env.BUILD_TYPE}}
 
+    - name: Generate coverage report
+      run: |
+        lcov --capture --directory ${{github.workspace}}/build --output-file coverage.info
+        lcov --remove coverage.info '/usr/*' '${{github.workspace}}/build/_deps/*' '${{github.workspace}}/build/lib/reactor/io/liburing-install/*' --output-file coverage.info
+
+    - name: Generate Cobertura report
+      run: lcov_cobertura coverage.info --base-dir ${{github.workspace}} --output coverage.xml --demangle
+
+    - name: Code Coverage Report
+      uses: irongut/CodeCoverageSummary@v1.3.0
+      with:
+        filename: ${{github.workspace}}/coverage.xml
+        badge: true
+        fail_below_min: false
+        format: markdown
+        hide_branch_rate: false
+        hide_complexity: true
+        indicators: true
+        output: both
+        thresholds: '60 80'
