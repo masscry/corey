@@ -1,10 +1,7 @@
-#include "console.hh"
-#include "io.hh"
-#include "sink.hh"
 #include <corey.hh>
+
 #include <cstdint>
 #include <cstdlib>
-#include <fcntl.h>
 
 int main(int argc, char* argv[]) {
     using namespace corey;
