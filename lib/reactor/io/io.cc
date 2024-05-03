@@ -99,12 +99,44 @@ Future<int> IoEngine::write(int fd, uint64_t offset, std::span<const char> data)
     return prepare(io_uring_prep_write, fd, data.data(), data.size(), offset)->get_future();
 }
 
+Future<int> IoEngine::send(int fd, std::span<const char> buf, int flags) {
+    return prepare(io_uring_prep_send, fd, buf.data(), buf.size_bytes(), flags)->get_future();
+}
+
+Future<int> IoEngine::recv(int fd, std::span<char> buf, int flags) {
+    return prepare(io_uring_prep_recv, fd, buf.data(), buf.size_bytes(), flags)->get_future();
+}
+
 Future<int> IoEngine::close(int fd) {
     return prepare(io_uring_prep_close, fd)->get_future();
 }
 
 Future<int> IoEngine::timeout(__kernel_timespec* ts) {
     return prepare(io_uring_prep_timeout, ts, 0, IORING_TIMEOUT_ABS)->get_future();
+}
+
+Future<int> IoEngine::socket(int domain, int type, int protocol) {
+    return prepare(io_uring_prep_socket, domain, type, protocol, 0)->get_future();
+}
+
+Future<int> IoEngine::connect(int fd, const sockaddr* addr, socklen_t addrlen) {
+    return prepare(io_uring_prep_connect, fd, addr, addrlen)->get_future();
+}
+
+Future<int> IoEngine::accept(int fd, sockaddr* addr, socklen_t* addrlen) {
+    return prepare(io_uring_prep_accept, fd, addr, addrlen, 0)->get_future();
+}
+
+Future<int> IoEngine::setsockopt(int fd, int level, int optname, const void* optval, socklen_t optlen) {
+    return posix_call(::setsockopt, fd, level, optname, optval, optlen);
+}
+
+Future<int> IoEngine::bind(int fd, const sockaddr* addr, socklen_t addrlen) {
+    return posix_call(::bind, fd, addr, addrlen);
+}
+
+Future<int> IoEngine::listen(int fd, int backlog) {
+    return posix_call(::listen, fd, backlog);
 }
 
 void IoEngine::submit_pending() {
@@ -129,15 +161,22 @@ void IoEngine::complete_ready() {
 }
 
 template<typename Func, typename... Args>
-inline
-Promise<int>* IoEngine::prepare(Func func, Args&&... args) {
+inline Promise<int>* IoEngine::prepare(Func&& func, Args&&... args) {
     if (auto sqe = io_uring_get_sqe(&_ring)) {
-        std::invoke(func, sqe, std::forward<Args>(args)...);
+        std::invoke(std::forward<Func>(func), sqe, std::forward<Args>(args)...);
         auto comp = new (reinterpret_cast<void*>(&sqe->user_data)) Promise<int>;
         ++_pending;
         return comp;
     }
     panic("no sqe available in io_uring");
+}
+
+template<typename Func, typename... Args>
+inline Future<int> IoEngine::posix_call(Func&& func, Args&&... args) {
+    if (auto ret = std::invoke(std::forward<Func>(func), std::forward<Args>(args)...); ret < 0) {
+        return make_ready_future<int>(-errno);
+    }
+    return make_ready_future<int>(0);
 }
 
 } // namespace corey

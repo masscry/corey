@@ -2,6 +2,7 @@
 
 #include "reactor/io/io.hh"
 #include "reactor/io/file.hh"
+#include "reactor/io/socket.hh"
 #include "reactor/reactor.hh"
 #include "reactor/task.hh"
 #include "reactor/coroutine.hh"

@@ -32,8 +32,16 @@ public:
     Future<int> readv(int fd, uint64_t offset, std::span<iovec>);
     Future<int> write(int fd, uint64_t offset, std::span<const char>);
     Future<int> writev(int fd, uint64_t offset, std::span<const iovec>);
+    Future<int> send(int fd, std::span<const char>, int flags);
+    Future<int> recv(int fd, std::span<char>, int flags);
     Future<int> close(int fd);
     Future<int> timeout(__kernel_timespec*);
+    Future<int> socket(int domain, int type, int protocol);
+    Future<int> connect(int fd, const sockaddr* addr, socklen_t addrlen);
+    Future<int> accept(int fd, sockaddr* addr, socklen_t* addrlen);
+    Future<int> setsockopt(int fd, int level, int optname, const void* optval, socklen_t optlen);
+    Future<int> bind(int fd, const sockaddr* addr, socklen_t addrlen);
+    Future<int> listen(int fd, int backlog);
 
 private:
 
@@ -41,8 +49,10 @@ private:
     void complete_ready();
 
     template<typename Func, typename... Args>
-    inline
-    Promise<int>* prepare(Func func, Args&&... args);
+    inline Promise<int>* prepare(Func&& func, Args&&... args);
+
+    template<typename Func, typename... Args>
+    inline Future<int> posix_call(Func&& func, Args&&... args);
 
     io_uring _ring;
     Defer<> _poll_routine;
