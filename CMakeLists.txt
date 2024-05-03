@@ -23,7 +23,7 @@ add_library(setup INTERFACE)
 target_compile_features(setup INTERFACE cxx_std_20)
 target_compile_options(setup
     INTERFACE
-        -Wall -Wextra -Werror -g
+        -Wall -Wextra -Werror -g -fPIC
         $<$<CXX_COMPILER_ID:GNU>:-fdiagnostics-color=always;-Wno-error=parentheses>
         $<$<CXX_COMPILER_ID:Clang>:-fcolor-diagnostics>
 )
