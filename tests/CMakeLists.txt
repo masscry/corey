@@ -19,6 +19,7 @@ target_sources(base_test
         test_task.cc
         test_reactor.cc
         test_app.cc
+        test_sync.cc
 )
 
 target_link_libraries(base_test
