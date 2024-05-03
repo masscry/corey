@@ -7,6 +7,7 @@ target_sources(reactor
         reactor.cc
         task.cc
         timer.cc
+        sync.cc
 )
 
 target_link_libraries(reactor PUBLIC
