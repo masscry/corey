@@ -1,6 +1,8 @@
 # Corey (WORK IN PROGRESS)
 
 [![Build](https://github.com/masscry/corey/actions/workflows/cmake-single-platform.yml/badge.svg)](https://github.com/masscry/corey/actions/workflows/cmake-single-platform.yml)
+![Coverage](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmasscry%2Fcorey%2Fmain%2Fcoverage.json&query=%24.lines&suffix=%25&style=flat&logo=C%2B%2B&label=Code%20Coverage&labelColor=success)
+
 
 ## Description
 
