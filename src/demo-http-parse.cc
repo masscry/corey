@@ -124,6 +124,13 @@ Request parse_request(std::span<const char> request) {
         case HEADER:
             if (it->empty()) {
                 req = std::move(it).left();
+                if (result.headers["Content-Length"].empty()) {
+                    return result;
+                }
+                auto content_length = std::stoul(result.headers["Content-Length"]);
+                if (content_length != req.text().size()) {
+                    throw std::runtime_error(fmt::format("Invalid content length ({} != {})", content_length, req.text().size()));
+                }
                 result.body = std::string(req.text().begin(), req.text().end());
                 return result;
             }
