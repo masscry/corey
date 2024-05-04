@@ -73,6 +73,8 @@ private:
     void put(Log::Level, std::string_view) const;
 };
 
+void log_orphaned_exception(std::exception_ptr);
+
 } // namespace corey
 
 template<>

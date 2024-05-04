@@ -327,6 +327,10 @@ public:
         }
     }
 
+    bool has_future() const noexcept {
+        return (this->state != nullptr) && (this->state->get_ref_cnt() > 1);
+    }
+
     [[nodiscard]]
     FutureType get_future() {
         if (!this->state) {

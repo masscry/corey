@@ -3,6 +3,7 @@
 #include "reactor/future.hh"
 #include "reactor/reactor.hh"
 #include "reactor/task.hh"
+#include "utils/log.hh"
 
 #include <coroutine>
 #include <exception>
@@ -24,6 +25,9 @@ struct BaseCoroPromise {
     [[nodiscard]] constexpr std::suspend_never final_suspend() noexcept { return {}; }
 
     void unhandled_exception() {
+        if (!static_cast<Self*>(this)->_promise.has_future()) {
+            log_orphaned_exception(std::current_exception());
+        }
         static_cast<Self*>(this)->_promise.set_exception(std::current_exception());
     }
 
@@ -53,6 +57,9 @@ struct BaseCoroPromise {
             }
             constexpr void await_resume() noexcept {}
         };
+        if (!static_cast<Self*>(this)->_promise.has_future()) {
+            log_orphaned_exception(std::current_exception());
+        }
         static_cast<Self*>(this)->_promise.set_exception(exp);
         return Awaiter{};
     }
@@ -80,6 +87,9 @@ struct CoroPromise : public BaseCoroPromise<CoroPromise<Data>> {
         _promise.set(data);
     }
     void return_value(std::exception_ptr exp) noexcept {
+        if (!_promise.has_future()) {
+            log_orphaned_exception(std::current_exception());
+        }
         _promise.set_exception(exp);
     }
 };

@@ -41,4 +41,15 @@ void Log::put(Log::Level level, std::string_view text) const {
     sink.write(fmt::format("[{}][{}] {}: {}\n", std::chrono::system_clock::now(), level, this->name, text));
 }
 
+void log_orphaned_exception(std::exception_ptr exp) {
+    static Log log("orphan");
+    try {
+        std::rethrow_exception(exp);
+    } catch (const std::exception& e) {
+        log.error("unhandled exception: {}", e.what());
+    } catch (...) {
+        log.error("unhandled exception: unknown");
+    }
+}
+
 } // namespace corey
