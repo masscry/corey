@@ -113,24 +113,22 @@ Request parse_request(std::span<const char> request) {
     enum {
         REQUEST,
         HEADER,
-        BODY
     } state = REQUEST;
     for (auto it = req.begin(), end = req.end(); it != end; ++it) {
         switch (state) {
         case REQUEST:
+            log.info("Request line: {}", std::string(it->begin(), it->end()));
             result.set_request(*it);
             state = HEADER;
             break;
         case HEADER:
             if (it->empty()) {
-                state = BODY;
-                break;
+                req = std::move(it).left();
+                result.body = std::string(req.text().begin(), req.text().end());
+                return result;
             }
+            log.info("Request line: {}", std::string(it->begin(), it->end()));
             result.set_header(*it);
-            break;
-        case BODY:
-            req = std::move(it).left();
-            result.body = std::string(req.text().begin(), req.text().end());
             break;
         }
     }
