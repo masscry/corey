@@ -30,7 +30,8 @@ configure: $(BUILD_DIR)
 		-DCMAKE_CXX_COMPILER=$(CXX_COMPILER) \
 		-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 		-DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE \
-		-DCOREY_ENABLE_COVERAGE=$(ENABLE_COVERAGE)
+		-DCOREY_ENABLE_COVERAGE=$(ENABLE_COVERAGE) \
+		-DCOREY_GCOV_TOOL=$(GCOV_TOOL)
 	ln -sf $(BUILD_DIR)/compile_commands.json ./
 
 clean:
@@ -39,9 +40,5 @@ clean:
 test: build
 	cd $(BUILD_DIR) && ctest
 
-coverage: test
-	cd $(BUILD_DIR) && lcov --gcov-tool $(GCOV_TOOL) --capture --directory . --output-file coverage.info
-	cd $(BUILD_DIR) && lcov --remove coverage.info '/usr/*' --output-file coverage.info
-	cd $(BUILD_DIR) && lcov --remove coverage.info '$(ABS_BUILD_DIR)/_deps/*' --output-file coverage.info
-	cd $(BUILD_DIR) && lcov --remove coverage.info '$(ABS_BUILD_DIR)/lib/reactor/io/liburing-install/*' --output-file coverage.info
-	cd $(BUILD_DIR) && genhtml coverage.info --output-directory coverage
+coverage: build
+	cd $(BUILD_DIR) && cmake --build . --target coverage

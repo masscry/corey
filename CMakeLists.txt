@@ -11,6 +11,9 @@ project(corey
 option(COREY_ENABLE_COVERAGE "Enable code coverage" OFF)
 
 if (COREY_ENABLE_COVERAGE)
+    if (COREY_GCOV_TOOL)
+        find_program(GCOV_PATH ${COREY_GCOV_TOOL})
+    endif()
     include(CodeCoverage)
     append_coverage_compiler_flags()
 endif()

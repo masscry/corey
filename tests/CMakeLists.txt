@@ -31,3 +31,12 @@ target_link_libraries(base_test
 
 include(GoogleTest)
 gtest_discover_tests(base_test)
+
+if (COREY_ENABLE_COVERAGE)
+    setup_target_for_coverage_lcov(
+        NAME coverage
+        EXECUTABLE base_test
+        DEPENDENCIES base_test
+        EXCLUDE "/usr/*" "${CMAKE_SOURCE_DIR}/src/*" "${CMAKE_BINARY_DIR}/_deps/*" "${CMAKE_BINARY_DIR}/lib/reactor/io/*" "${CMAKE_SOURCE_DIR}/CMakeCCompilerId.c"
+    )
+endif()

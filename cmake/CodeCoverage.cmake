@@ -306,6 +306,10 @@ function(setup_target_for_coverage_lcov)
         ${GENHTML_PATH} ${GENHTML_EXTRA_ARGS} ${Coverage_GENHTML_ARGS} -o
         ${Coverage_NAME} ${Coverage_NAME}.info
     )
+    # Generate summary output
+    set(LCOV_GEN_SUMMARY_CMD
+        ${LCOV_PATH} ${Coverage_LCOV_ARGS} --gcov-tool ${GCOV_PATH} --summary ${Coverage_NAME}.info > ${Coverage_NAME}.summary
+    )
     if(${Coverage_SONARQUBE})
         # Generate SonarQube output
         set(GCOVR_XML_CMD
@@ -366,6 +370,7 @@ function(setup_target_for_coverage_lcov)
         COMMAND ${LCOV_BASELINE_COUNT_CMD}
         COMMAND ${LCOV_FILTER_CMD}
         COMMAND ${LCOV_GEN_HTML_CMD}
+        COMMAND ${LCOV_GEN_SUMMARY_CMD}
         ${GCOVR_XML_CMD_COMMAND}
 
         # Set output files as GENERATED (will be removed on 'make clean')
@@ -376,6 +381,7 @@ function(setup_target_for_coverage_lcov)
             ${Coverage_NAME}.info
             ${GCOVR_XML_CMD_BYPRODUCTS}
             ${Coverage_NAME}/index.html
+            ${Coverage_NAME}.summary
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
         DEPENDS ${Coverage_DEPENDENCIES}
         VERBATIM # Protect arguments to commands

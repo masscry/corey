@@ -11,7 +11,7 @@ on:
 env:
   BUILD_TYPE: Debug
   COV_COMMIT_AUTHOR: CoverageBot
-  COV_COMMIT_MESSAGE: Update Coverage Report
+  COV_COMMIT_MESSAGE: "readme: Update coverage report"
   
 jobs:
   build:
@@ -41,28 +41,17 @@ jobs:
       run: ctest -C ${{env.BUILD_TYPE}}
 
     - name: Generate coverage report
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --target coverage
+    
+    - name: Update coverage summary
       run: |
-        lcov --capture --directory ${{github.workspace}}/build --output-file coverage.info
-        lcov --remove coverage.info '/usr/*' '${{github.workspace}}/build/_deps/*' '${{github.workspace}}/build/lib/reactor/io/liburing-install/*' --output-file coverage.info
+        sed -nr 's/lines\.+: ([0-9]+\.[0-9]+).+/{"lines": \1}/p' ${{github.workspace}}/build/coverage.summary > coverage.json
 
-    - name: Generate Cobertura report
-      run: |
-        lcov_cobertura coverage.info --base-dir ${{github.workspace}} --output coverage.xml --demangle
-        readlink -f coverage.xml
-
-    - name: Code Coverage Summary Report
-      uses: irongut/CodeCoverageSummary@v1.3.0
-      with:
-        filename: coverage.xml
-        badge: true
-        format: markdown
-        output: file
     - name: Commit Coverage
       if: github.event_name == 'push'
       run: |
         git config --global user.name "${{ env.COV_COMMIT_AUTHOR }}"
         git config --global user.email "masscry@users.noreply.github.com"
-        git add code-coverage-results.md
+        git add code-coverage-results.json
         git commit -m "${{ env.COV_COMMIT_MESSAGE }}"
         git push
-        
