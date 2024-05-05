@@ -4,13 +4,14 @@
 
 #include <cstdint>
 #include <exception>
+#include <stdexcept>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <system_error>
 
 namespace corey {
 
-constexpr int invalid_fd = -1;
 constexpr int max_backlog = 128;
 
 Future<Server> Socket::make_tcp_listener(uint16_t port) {
@@ -88,7 +89,7 @@ Socket::~Socket() {
 
 Future<> Socket::close() {
     if (_fd == invalid_fd) {
-        co_await std::make_exception_ptr(std::runtime_error("Socket already closed"));
+        co_await std::make_exception_ptr(std::system_error(EBADF, std::system_category(), "Socket already closed"));
     }
     auto ret = co_await IoEngine::instance().close(_fd);
     _fd = invalid_fd;

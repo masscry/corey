@@ -22,8 +22,6 @@ Future<File> File::open(const char* path, int flags, mode_t mode) {
     co_return File(fd);
 }
 
-constexpr int invalid_fd = -1;
-
 File::File() noexcept : File(invalid_fd) { }
 File::File(int fd) : _fd(fd) {}
 

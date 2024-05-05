@@ -30,22 +30,22 @@ Reactor::~Reactor() {
 
 void Reactor::run() {
     for (auto& routine: _routines) {
-        routine.second.execute();
+        routine.second.try_execute();
     }
     for (auto task = _tasks.begin(); task != _tasks.end();) {
         auto next = std::next(task);
-        if (task->try_execute_once()) {
-            _tasks.erase_and_dispose(task, [](Task* task) { delete task; });
+        if (task->try_execute()) {
+            _tasks.erase_and_dispose(task, [](Executable* task) { delete task; });
         }
         task = next;
     }
 }
 
-void Reactor::add(Task&& task) {
-    _tasks.push_back(*new Task(std::move(task)));
+void Reactor::add_task(Executable&& task) {
+    _tasks.push_back(*new Executable(std::move(task)));
 }
 
-Defer<> Reactor::add(Routine&& routine) {
+Defer<> Reactor::add_routine(Executable&& routine) {
     uint16_t id = _routines.size();
     auto start = id;
     while(_routines.count(id++)) { COREY_ASSERT(id != start); }

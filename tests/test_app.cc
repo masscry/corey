@@ -3,7 +3,7 @@
 
 #include "corey.hh"
 
-class ApplicationTest : public testing::Test {
+class SocketTest : public testing::Test {
 protected:
     void SetUp() override {}
 
@@ -12,14 +12,14 @@ protected:
     corey::Application app{0, nullptr};
 };
 
-TEST_F(ApplicationTest, Run) {
+TEST_F(SocketTest, Run) {
     auto result = app.run([](const corey::ParseResult&) -> corey::Future<int> {
         co_return 42;
     });
     EXPECT_EQ(result, 42);
 }
 
-TEST_F(ApplicationTest, RunWithException) {
+TEST_F(SocketTest, RunWithException) {
     try {
         app.run([](const corey::ParseResult&) -> corey::Future<int> {
             throw std::runtime_error("Exception");
@@ -30,7 +30,7 @@ TEST_F(ApplicationTest, RunWithException) {
     }
 }
 
-TEST_F(ApplicationTest, RunReadFromZero) {
+TEST_F(SocketTest, RunReadFromZero) {
     auto result = app.run([](const corey::ParseResult&) -> corey::Future<int> {
         auto file = co_await corey::File::open("/dev/zero", O_RDONLY);
         std::array<char, 100> data;
@@ -46,7 +46,7 @@ TEST_F(ApplicationTest, RunReadFromZero) {
     EXPECT_EQ(result, 0);
 }
 
-TEST_F(ApplicationTest, RunWriteToNull) {
+TEST_F(SocketTest, RunWriteToNull) {
     auto result = app.run([](const corey::ParseResult&) -> corey::Future<int> {
         auto file = co_await corey::File::open("/dev/null", O_WRONLY);
         std::array<char, 100> data;
@@ -60,7 +60,7 @@ TEST_F(ApplicationTest, RunWriteToNull) {
     EXPECT_EQ(result, 0);
 }
 
-TEST_F(ApplicationTest, RunReadFromNonExistent) {
+TEST_F(SocketTest, RunReadFromNonExistent) {
     try {
         app.run([](const corey::ParseResult&) -> corey::Future<int> {
             auto file = co_await corey::File::open("/nonexistent", O_RDONLY);
@@ -74,7 +74,7 @@ TEST_F(ApplicationTest, RunReadFromNonExistent) {
     }
 }
 
-TEST_F(ApplicationTest, RunWriteToReadOnly) {
+TEST_F(SocketTest, RunWriteToReadOnly) {
     app.run([](const corey::ParseResult&) -> corey::Future<int> {
         auto file = co_await corey::File::open("/dev/zero", O_RDONLY);
         std::array<char, 100> data;
@@ -91,7 +91,7 @@ TEST_F(ApplicationTest, RunWriteToReadOnly) {
     });
 }
 
-TEST_F(ApplicationTest, RunFileFsync) {
+TEST_F(SocketTest, RunFileFsync) {
     auto result = app.run([](const corey::ParseResult&) -> corey::Future<int> {
         auto file = co_await corey::File::open("/dev/zero", O_RDONLY);
         try {
@@ -105,7 +105,7 @@ TEST_F(ApplicationTest, RunFileFsync) {
     EXPECT_EQ(result, 0);
 }
 
-TEST_F(ApplicationTest, RunFileFdatasync) {
+TEST_F(SocketTest, RunFileFdatasync) {
     auto result = app.run([](const corey::ParseResult&) -> corey::Future<int> {
         auto file = co_await corey::File::open("/dev/zero", O_RDONLY);
         try {
@@ -119,7 +119,7 @@ TEST_F(ApplicationTest, RunFileFdatasync) {
     EXPECT_EQ(result, 0);
 }
 
-TEST_F(ApplicationTest, RunFileMoveAssignmentOperator) {
+TEST_F(SocketTest, RunFileMoveAssignmentOperator) {
     auto result = app.run([](const corey::ParseResult&) -> corey::Future<int> {
         auto file = co_await corey::File::open("/dev/zero", O_RDONLY);
         corey::File file2;
@@ -131,7 +131,7 @@ TEST_F(ApplicationTest, RunFileMoveAssignmentOperator) {
     EXPECT_EQ(result, 0);
 }
 
-TEST_F(ApplicationTest, RunYield) {
+TEST_F(SocketTest, RunYield) {
     auto result = app.run([](const corey::ParseResult&) -> corey::Future<int> {
         co_await corey::yield();
         co_return 42;

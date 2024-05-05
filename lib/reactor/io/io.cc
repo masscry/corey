@@ -51,7 +51,7 @@ IoEngine::IoEngine(Reactor& reactor) {
     if (int ret = io_uring_queue_init(max_events, &_ring, 0); ret != 0) {
         throw std::system_error(-ret, std::system_category(), "io_uring_queue_init failed");
     }
-    _poll_routine = reactor.add(make_routine([this] {
+    _poll_routine = reactor.add_routine(make_routine([this] {
         submit_pending();
         complete_ready();
     }));

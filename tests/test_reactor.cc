@@ -16,7 +16,7 @@ TEST(ReactorTest, ReactorAdd) {
     auto fut = test.get_future();
 
     EXPECT_NO_THROW({
-        reactor.add(corey::make_task([test = std::move(test)]() mutable {
+        reactor.add_task(corey::make_task([test = std::move(test)]() mutable {
             test.set(101);
         }));
     });

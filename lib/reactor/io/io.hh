@@ -10,6 +10,7 @@
 namespace corey {
 
 constexpr auto max_events = 128u;
+constexpr int invalid_fd = -1;
 
 class IoEngine {
 public:

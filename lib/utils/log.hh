@@ -20,22 +20,28 @@ public:
         error = 3
     };
 
+    static Sink<> set_default_sink(const Sink<>&);
+    static Sink<> get_default_sink();
+
+    static Level set_default_level(Level);
+    static Level get_default_level();
+
     std::string get_name() const { return name; }
     Level get_level() const { return filter_level; }
     const Sink<>& get_sink() const { return sink; }
 
     Level set_level(Level);
-    Sink<> set_sink(Sink<>&&);
+    Sink<> set_sink(const Sink<>&);
 
     Log(std::string_view name);
     Log(std::string_view, Level);
-    Log(std::string_view, Sink<>&&);
-    Log(std::string_view, Level, Sink<>&&);
+    Log(std::string_view, const Sink<>&);
+    Log(std::string_view, Level, const Sink<>&);
     Log(const Log&) = delete;
     Log &operator=(const Log&) = delete;
     Log(Log&&) = delete;
     Log &operator=(Log&&) = delete;
-    ~Log();
+    ~Log() = default;
 
     template<typename... Args>
     void debug(fmt::format_string<Args...> fmt, Args&&... args) const {

@@ -14,12 +14,14 @@ add_executable(base_test)
 
 target_sources(base_test
     PRIVATE
-        test_base.cc
+        test_log.cc
+        test_defer.cc
         test_future_promise.cc
         test_task.cc
         test_reactor.cc
         test_app.cc
         test_sync.cc
+        test_socket.cc
 )
 
 target_link_libraries(base_test

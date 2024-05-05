@@ -40,5 +40,5 @@ clean:
 test: build
 	cd $(BUILD_DIR) && ctest
 
-coverage: build
-	cd $(BUILD_DIR) && cmake --build . --target coverage
+coverage: configure
+	cmake --build $(BUILD_DIR) --target coverage

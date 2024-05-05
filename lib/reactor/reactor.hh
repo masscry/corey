@@ -10,8 +10,8 @@
 namespace corey {
 
 class Reactor {
-    using TaskList = boost::intrusive::list<Task, boost::intrusive::constant_time_size<false>>;
-    using RoutineList = boost::container::flat_map<int, Routine>;
+    using TaskList = boost::intrusive::list<Executable, boost::intrusive::constant_time_size<false>>;
+    using RoutineList = boost::container::flat_map<int, Executable>;
 public:
 
     static
@@ -25,8 +25,8 @@ public:
     ~Reactor();
 
     void run();
-    void add(Task&&);
-    Defer<> add(Routine&&);
+    void add_task(Executable&&);
+    Defer<> add_routine(Executable&&);
 
 private:
 

@@ -49,6 +49,8 @@ public:
     Future<uint64_t> write(std::span<const char>);
     Future<> close();
 
+    const Socket& socket() const { return _socket; }
+
 private:
     Socket _socket;
 };
@@ -66,6 +68,8 @@ public:
 
     Future<Client> accept();
     Future<> close();
+
+    const Socket& socket() const { return _socket; }
 
 private:
     Socket _socket;

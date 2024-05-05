@@ -37,7 +37,7 @@ struct BaseCoroPromise {
             corey::Future<FutData> future;
             bool await_ready() const noexcept { return future.is_ready(); }
             void await_suspend(std::coroutine_handle<> handle) noexcept {
-                corey::Reactor::instance().add(make_task(
+                corey::Reactor::instance().add_task(make_task(
                     [handle]() { handle.resume(); },
                     [this]() { return future.is_ready(); }
                 ));
@@ -58,7 +58,7 @@ struct BaseCoroPromise {
             constexpr void await_resume() noexcept {}
         };
         if (!static_cast<Self*>(this)->_promise.has_future()) {
-            log_orphaned_exception(std::current_exception());
+            log_orphaned_exception(exp);
         }
         static_cast<Self*>(this)->_promise.set_exception(exp);
         return Awaiter{};
@@ -68,7 +68,7 @@ struct BaseCoroPromise {
         struct Awaiter {
             constexpr bool await_ready() const noexcept { return false; }
             void await_suspend(std::coroutine_handle<> handle) noexcept {
-                corey::Reactor::instance().add(make_task([handle]() { handle.resume(); }));
+                corey::Reactor::instance().add_task(make_task([handle]() { handle.resume(); }));
             }
             constexpr void await_resume() noexcept {}
         };
@@ -88,7 +88,7 @@ struct CoroPromise : public BaseCoroPromise<CoroPromise<Data>> {
     }
     void return_value(std::exception_ptr exp) noexcept {
         if (!_promise.has_future()) {
-            log_orphaned_exception(std::current_exception());
+            log_orphaned_exception(exp);
         }
         _promise.set_exception(exp);
     }
