@@ -54,12 +54,12 @@ class Sink<void> {
         Sink<Impl> _sink;
     };
 
-    using UPModel = std::unique_ptr<Model>;
+    using SPModel = std::shared_ptr<Model>;
 public:
 
     Sink() = default;
-    Sink(const Sink<void>&) = delete;
-    Sink& operator=(const Sink<void>&) = delete;
+    Sink(const Sink<void>&) = default;
+    Sink& operator=(const Sink<void>&) = default;
     Sink& operator=(Sink<void>&& other) noexcept = default;
     Sink(Sink<void>&& other) noexcept = default;
     ~Sink() = default;
@@ -92,9 +92,13 @@ public:
         );
     }
 
+    bool operator== (const Sink<void>& other) const {
+        return _model == other._model;
+    }
+
 private:
-    explicit Sink(UPModel&& model) noexcept : _model(std::move(model)) { ; }
-    UPModel _model;
+    explicit Sink(SPModel&& model) noexcept : _model(std::move(model)) { ; }
+    SPModel _model;
 };
 
 
