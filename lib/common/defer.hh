@@ -66,16 +66,13 @@ public:
     ~Defer() = default;
 
     template<typename Func>
-    Defer(Defer<Func>&& other) noexcept {
-        _impl = std::make_unique<DeferImpl<Func>>(std::move(other));
-    }
+    Defer(Defer<Func>&& other) noexcept
+        : _impl(std::make_unique<DeferImpl<Func>>(std::move(other)))  {}
 
     template<typename Func>
-    Defer& operator=(Defer<Func>&& other) noexcept {
-        if (this != &other) {
-            this->~Defer();
-            new (this) Defer(std::move(other));
-        }
+    Defer<>& operator=(Defer<Func>&& other) noexcept {
+        this->~Defer();
+        new (this) Defer(std::move(other));
         return *this;
     }
 
