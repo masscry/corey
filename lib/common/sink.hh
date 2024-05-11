@@ -8,98 +8,51 @@
 
 namespace corey {
 
-template<typename Impl = void>
 class Sink {
-    friend class Sink<void>;
-public:
-    Sink(const Sink<Impl>&) = delete;
-    Sink& operator=(const Sink<Impl>&) = delete;
-    Sink& operator=(Sink<Impl>&& other) noexcept = default;
-    Sink(Sink<Impl>&& other) noexcept = default;
-    ~Sink() = default;
-
-    int write(std::span<const char> data) const {
-        return _impl.write(data);
-    }
-
-    template<typename... Args>
-    static Sink<Impl> make(Args&&... args) {
-        return Sink<Impl>(std::forward<Args>(args)...);
-    }
-
-    const Impl& get_impl() const noexcept { return _impl; }
-
-private:
-    template<typename... Args>
-    explicit Sink(Args&&... args) noexcept : _impl(std::forward<Args>(args)...) { ; }
-    Impl _impl;
-};
-
-template<>
-class Sink<void> {
-    struct Model {
+    struct IDevice {
+        virtual ~IDevice() = default;
         virtual int write(std::span<const char> data) const = 0;
-        virtual ~Model() = default;
+        virtual const void* get() const = 0;
     };
-
-    template<typename Impl>
-    struct SinkModel: public Model {
-        int write(std::span<const char> data) const override { return _sink.write(data); }
-
-        template<typename... Args>
-        SinkModel(Args&&... args) : _sink(std::forward<Args>(args)...) { ; }
-        ~SinkModel() override = default;
-        Sink<Impl>& get() noexcept { return _sink; }
-    private:
-        Sink<Impl> _sink;
-    };
-
-    using SPModel = std::shared_ptr<Model>;
+    using SPDevice = std::shared_ptr<IDevice>;
 public:
 
     Sink() = default;
-    Sink(const Sink<void>&) = default;
-    Sink& operator=(const Sink<void>&) = default;
-    Sink& operator=(Sink<void>&& other) noexcept = default;
-    Sink(Sink<void>&& other) noexcept = default;
+    Sink(const Sink& other) = default;
+    Sink& operator=(const Sink& other) = default;
+    Sink(Sink&&) noexcept = default;
+    Sink& operator=(Sink&&) noexcept = default;
     ~Sink() = default;
 
-    template<typename Impl>
-    Sink(Sink<Impl>&& other) noexcept : _model(std::make_unique<SinkModel<Impl>>(std::move(other))) { ; }
-
-    template<typename Impl>
-    Sink& operator=(Sink<Impl>&& other) noexcept {
-        if (this != &other) {
-            this->~Sink();
-            new (this) Sink(std::make_unique<SinkModel<Impl>>(std::move(other)));
-        }
-        return *this;
-    }
-
-    template<typename Impl>
-    const Sink<Impl>& as() const {
-        return static_cast<SinkModel<Impl>*>(_model.get())->get();
+    template<typename Device, typename... Args>
+    static Sink make(Args&&... args) {
+        struct DeviceImpl : public IDevice {
+            DeviceImpl(Args&&... args) : _dev(std::forward<Args>(args)...) {}
+            int write(std::span<const char> data) const override { return _dev.write(data); }
+            const void* get() const override { return &_dev; }
+            Device _dev;
+        };
+        return Sink(std::make_shared<DeviceImpl>(std::forward<Args>(args)...));
     }
 
     int write(std::span<const char> data) const {
-        return _model->write(data);
+        return _dev->write(data);
     }
 
-    template<typename Impl, typename... Args>
-    static Sink<void> make(Args&&... args) {
-        return Sink<void>(std::unique_ptr<SinkModel<Impl>>(
-            new SinkModel<Impl>(std::forward<Args>(args)...))
-        );
+    template<typename Device>
+    const Device& as() const {        
+        return *static_cast<const Device*>(_dev->get());
     }
 
-    bool operator== (const Sink<void>& other) const {
-        return _model == other._model;
+    friend
+    bool operator==(const Sink& lhs, const Sink& rhs) {
+        return lhs._dev == rhs._dev;
     }
 
 private:
-    explicit Sink(SPModel&& model) noexcept : _model(std::move(model)) { ; }
-    SPModel _model;
-};
+    Sink(SPDevice&& dev) noexcept : _dev(std::move(dev)) {}
 
+    SPDevice _dev;
+};
 
 } // namespace corey
