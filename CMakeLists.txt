@@ -27,13 +27,14 @@ target_compile_features(setup INTERFACE cxx_std_20)
 target_compile_options(setup
     INTERFACE
         -Wall -Wextra -Werror -g -fPIC
-        $<$<CXX_COMPILER_ID:GNU>:-fdiagnostics-color=always;-Wno-error=parentheses>
+        $<$<CXX_COMPILER_ID:GNU>:-fdiagnostics-color=always>
         $<$<CXX_COMPILER_ID:Clang>:-fcolor-diagnostics>
 )
 target_include_directories(setup
     INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/lib
 )
+target_link_options(setup INTERFACE -rdynamic)
 
 add_subdirectory(lib)
 add_subdirectory(src)
