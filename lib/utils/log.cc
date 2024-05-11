@@ -18,25 +18,32 @@ namespace corey {
 
 namespace {
 
-Sink default_sink = Sink::make<Console>();
-Log::Level default_level = Log::Level::info;
+Sink& default_sink() {
+    static Sink sink = Sink::make<Console>();
+    return sink;
+}
+
+Log::Level& default_level() {
+    static Log::Level level = Log::Level::info;
+    return level;
+}
 
 } // namespace
 
 Sink Log::set_default_sink(const Sink& new_sink) {
-    return std::exchange(default_sink, new_sink);
+    return std::exchange(default_sink(), new_sink);
 }
 
 Sink Log::get_default_sink() {
-    return default_sink;
+    return default_sink();
 }
 
 Log::Level Log::set_default_level(Log::Level level) {
-    return std::exchange(default_level, level);
+    return std::exchange(default_level(), level);
 }
 
 Log::Level Log::get_default_level() {
-    return default_level;
+    return default_level();
 }
 
 Log::Level Log::set_level(Log::Level level) {
