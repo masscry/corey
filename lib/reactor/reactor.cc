@@ -17,7 +17,7 @@ Reactor& Reactor::instance() {
     return *g_instance;
 }
 
-Reactor::Reactor() {
+Reactor::Reactor() : _has_progress(false) {
     COREY_ASSERT(!g_instance);
     g_instance = this;
 }
@@ -32,13 +32,17 @@ void Reactor::run() {
     for (auto& routine: _routines) {
         routine.second.try_execute();
     }
+
+    bool new_has_progress = false;
     for (auto task = _tasks.begin(); task != _tasks.end();) {
         auto next = std::next(task);
         if (task->try_execute()) {
             _tasks.erase_and_dispose(task, [](Executable* task) { delete task; });
+            new_has_progress = true;
         }
         task = next;
     }
+    _has_progress = new_has_progress;
 }
 
 void Reactor::add_task(Executable&& task) {

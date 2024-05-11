@@ -43,7 +43,7 @@ IoEngine& IoEngine::instance() {
     return *_instance;
 }
 
-IoEngine::IoEngine(Reactor& reactor) {
+IoEngine::IoEngine(Reactor& reactor) : _reactor(reactor) {
     if (_instance) {
         panic("IoEngine already initialized");
     }
@@ -152,13 +152,28 @@ void IoEngine::submit_pending() {
 }
 
 void IoEngine::complete_ready() {
-    io_uring_cqe *cqe;
-    while (io_uring_peek_cqe(&_ring, &cqe) == 0) {
+    constexpr auto complete_cqe = [](IoEngine& engine, io_uring_cqe* cqe) {
         auto comp = reinterpret_cast<Promise<int>*>(&cqe->user_data);
         comp->set(cqe->res);
         comp->~Promise();
-        io_uring_cqe_seen(&_ring, cqe);
-        --_inflight;
+        io_uring_cqe_seen(&engine._ring, cqe);
+        --engine._inflight;
+    };
+
+    io_uring_cqe *cqe;
+    if (!_reactor.has_progress() && (_inflight > 0)) {
+        auto err = io_uring_wait_cqe(&_ring, &cqe);
+        COREY_ASSERT_MSG(err == 0, "io_uring_wait_cqe failed: {}", std::system_error(-err, std::system_category()));
+        complete_cqe(*this, cqe);
+    }
+
+    while (true) {
+        auto err = io_uring_peek_cqe(&_ring, &cqe);
+        if (err == -EAGAIN) {
+            break;
+        }
+        COREY_ASSERT_MSG(err == 0, "io_uring_peek_cqe failed: {}", std::system_error(-err, std::system_category()));
+        complete_cqe(*this, cqe);
     }
 }
 

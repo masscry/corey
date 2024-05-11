@@ -59,6 +59,7 @@ private:
     Defer<> _poll_routine;
     int _pending = 0;
     int _inflight = 0;
+    Reactor& _reactor;
 };
 
 } // namespace corey

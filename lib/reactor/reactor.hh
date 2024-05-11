@@ -28,12 +28,17 @@ public:
     void add_task(Executable&&);
     Defer<> add_routine(Executable&&);
 
+    bool has_progress() const {
+        return _has_progress;
+    }
+
 private:
 
     void remove_routine(int id);
 
     TaskList _tasks;
     RoutineList _routines;
+    bool _has_progress;
 };
 
 } // namespace corey
