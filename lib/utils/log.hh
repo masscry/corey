@@ -20,23 +20,23 @@ public:
         error = 3
     };
 
-    static Sink<> set_default_sink(const Sink<>&);
-    static Sink<> get_default_sink();
+    static Sink set_default_sink(const Sink&);
+    static Sink get_default_sink();
 
     static Level set_default_level(Level);
     static Level get_default_level();
 
     std::string get_name() const { return name; }
     Level get_level() const { return filter_level; }
-    const Sink<>& get_sink() const { return sink; }
+    const Sink& get_sink() const { return sink; }
 
     Level set_level(Level);
-    Sink<> set_sink(const Sink<>&);
+    Sink set_sink(const Sink&);
 
     Log(std::string_view name);
     Log(std::string_view, Level);
-    Log(std::string_view, const Sink<>&);
-    Log(std::string_view, Level, const Sink<>&);
+    Log(std::string_view, const Sink&);
+    Log(std::string_view, Level, const Sink&);
     Log(const Log&) = delete;
     Log &operator=(const Log&) = delete;
     Log(Log&&) = delete;
@@ -73,7 +73,7 @@ public:
 private:
     std::string name;
     Level filter_level;
-    Sink<> sink;
+    Sink sink;
 
     bool is_active(Level) const;
     void put(Log::Level, std::string_view) const;
