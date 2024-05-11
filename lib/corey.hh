@@ -27,9 +27,9 @@ struct ApplicationInfo {
     std::string version = "0.1.0";
 };
 
-template<typename Func>
-concept MainFunc = requires(Func func, ParseResult result) {
-    { func(result) } -> std::same_as<Future<int>>;
+template<typename Func, typename... Args>
+concept MainFunc = requires(Func func, ParseResult result, Args&&... args) {
+    { func(result, std::forward<Args>(args)...) } -> std::same_as<Future<int>>;
 };
 
 class Application {
@@ -48,8 +48,9 @@ public:
 
     void set_positional_help(const std::string& help);
 
-    template<MainFunc Func>
-    int run(Func&& func);
+    template<typename Func, typename... Args>
+    requires MainFunc<Func, Args...>
+    int run(Func&& func, Args&&... args);
 
 private:
 
@@ -79,20 +80,21 @@ inline void Application::set_positional_help(const std::string& help) {
     _options.positional_help(help);
 }
 
-template<MainFunc Func>
-inline int Application::run(Func&& func) {
+template<typename Func, typename... Args>
+requires MainFunc<Func, Args...>
+inline int Application::run(Func&& func, Args&&... args) {
     auto parse_results = get_parse_result();
     if (parse_results.count("help")) {
-        auto sink = Sink<Console>::make();
+        auto sink = Sink::make<Console>();
         sink.write(fmt::format("{}\n", _options.help()));
         return 0;
     }
     if (parse_results.count("version")) {
-        auto sink = Sink<Console>::make();
+        auto sink = Sink::make<Console>();
         sink.write(fmt::format("{}\n", _info.version));
         return 0;
     }
-    return run(func(parse_results));
+    return run(func(parse_results, std::forward<Args>(args)...));
 }
 
 
