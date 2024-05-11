@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
     app.set_positional_help("input output");
 
     return app.run([](const ParseResult& opts) -> Future<int> {    
-        auto console = Sink<Console>::make();
+        auto console = Sink::make<Console>();
         if (opts.count("input") == 0) {
             console.write(fmt::format("Error: missing input file\n"));
             co_return EXIT_FAILURE;

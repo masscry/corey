@@ -1,7 +1,10 @@
+#include "defer.hh"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
 #include <corey.hh>
+
+#include <fmt/format.h>
 
 #include <type_traits>
 #include <sstream>
@@ -15,22 +18,26 @@ public:
 class LogTest : public testing::Test {
 protected:
 
-    void SetUp() override {
+    LogTest() {
         using ::testing::_;
-        old_sink = corey::Log::set_default_sink(corey::Sink<void>::make<MockConsole>());
-        console = &corey::Log::get_default_sink().as<MockConsole>().get_impl();
-        ON_CALL(*console, write(_)).WillByDefault([](std::span<const char> message) {
-            return message.size();
+        auto old_sink = corey::Log::set_default_sink(corey::Sink::make<MockConsole>());
+        restore_old_sink = corey::Defer([old_sink = std::move(old_sink)]() noexcept {
+            corey::Log::set_default_sink(old_sink);
         });
 
+        console = &corey::Log::get_default_sink().as<MockConsole>();
+        logStream = std::stringstream();
+        ON_CALL(*console, write(_)).WillByDefault([this](std::span<const char> message) {
+            fmt::print("{}", fmt::join(message, ""));
+            logStream.write(message.data(), message.size());
+            return message.size();
+        });
     }
 
-    void TearDown() override {
-        corey::Log::set_default_sink(old_sink);
-        console = nullptr;
-    }
-    
-    corey::Sink<> old_sink;
+    ~LogTest() override = default;
+
+    corey::Defer<> restore_old_sink;
+    std::stringstream logStream;
     const MockConsole* console = nullptr;
 };
 
@@ -127,11 +134,11 @@ TEST_F(LogTest, LogConstructor) {
     EXPECT_EQ(test1.get_name(), "test1");
     EXPECT_EQ(test1.get_level(), corey::Log::Level::warn);
 
-    corey::Log test2("test2", corey::Sink<void>::make<MockConsole>());
+    corey::Log test2("test2", corey::Sink::make<MockConsole>());
     EXPECT_EQ(test2.get_name(), "test2");
     EXPECT_EQ(test2.get_level(), corey::Log::Level::info);
 
-    corey::Log test3("test3", corey::Log::Level::error, corey::Sink<void>::make<MockConsole>());
+    corey::Log test3("test3", corey::Log::Level::error, corey::Sink::make<MockConsole>());
     EXPECT_EQ(test3.get_name(), "test3");
     EXPECT_EQ(test3.get_level(), corey::Log::Level::error);
 }
@@ -146,9 +153,8 @@ TEST_F(LogTest, Assert) {
     }, ".*");
     EXPECT_DEATH({
         EXPECT_CALL(*console, write(_)).Times(1);
-        std::ignore = COREY_ASSERT(false);
+        COREY_ASSERT(false);
     }, ".*");
-    EXPECT_TRUE(COREY_ASSERT(true));
 }
 
 TEST_F(LogTest, Task) {
@@ -217,52 +223,39 @@ TEST_F(LogTest, LogApplicationOrphanedException) {
     using ::testing::_;
     EXPECT_CALL(*console, write(_)).Times(testing::AtLeast(1));
 
-    std::stringstream logStream;
-    corey::Log test("test");
-    
-    ON_CALL(*console, write(_)).WillByDefault([&logStream](std::span<const char> message) {
-        logStream.write(message.data(), message.size());
-        return message.size();
-    });
-
+    corey::Log test_log("test");
     corey::Application app(0, nullptr);
 
-    auto result = app.run([&](const corey::ParseResult&) -> corey::Future<int> {
+    auto result = app.run([](const corey::ParseResult&, corey::Log& test_log) -> corey::Future<int> {
 
         corey::Promise<> good_promise, bad_promise;
 
         auto good_fut = good_promise.get_future();
         auto bad_fut = bad_promise.get_future();
 
-        std::ignore = [
-            &test
-        ](auto&& good_promise, auto&& bad_promise) mutable -> corey::Future<>{
-            auto good = std::move(good_promise);
-            auto bad = std::move(bad_promise);
-
-            test.info("Good promise");
+        std::ignore = [](auto& log, auto good, auto bad) mutable -> corey::Future<>{
+            log.info("Good promise");
             good.set();
-            test.info("yield");
+            log.info("yield");
             co_await corey::yield();
-            test.info("throwing exception");
-            throw std::runtime_error("Orpaned exception");
-            test.info("Bad promise");
+            log.info("throwing exception");
+            throw std::runtime_error("Orphaned exception");
+            log.info("Bad promise");
             bad.set();
-        }(std::move(good_promise), std::move(bad_promise));
+        }(test_log, std::move(good_promise), std::move(bad_promise));
 
-        test.info("wait good");
+        test_log.info("wait good");
         EXPECT_NO_THROW(co_await std::move(good_fut));
 
-        test.info("wait bad");
+        test_log.info("wait bad");
         EXPECT_THROW(co_await std::move(bad_fut), corey::BrokenPromise);
 
-        test.info("done");
-
-        auto output = logStream.str();
-        EXPECT_THAT(output, testing::HasSubstr("orphan: unhandled exception: Orpaned exception"));
+        test_log.info("done");
         co_return 0;
-    });
+    }, test_log);
 
+    auto output = logStream.str();
+    EXPECT_THAT(output, testing::HasSubstr("orphan: unhandled exception: Orphaned exception"));
     EXPECT_EQ(result, 0);
 }
 
@@ -270,51 +263,38 @@ TEST_F(LogTest, LogApplicationOrphanedExceptionWithReturnValue) {
     using ::testing::_;
     EXPECT_CALL(*console, write(_)).Times(testing::AtLeast(1));
 
-    std::stringstream logStream;
-    corey::Log test("test");
-
-    ON_CALL(*console, write(_)).WillByDefault([&logStream](std::span<const char> message) {
-        logStream.write(message.data(), message.size());
-        return message.size();
-    });
-
+    corey::Log test_log("test");
     corey::Application app(0, nullptr);
-    auto result = app.run([&](const corey::ParseResult&) -> corey::Future<int> {
+    auto result = app.run([](const corey::ParseResult&, corey::Log& test_log) -> corey::Future<int> {
 
         corey::Promise<> good_promise, bad_promise;
 
         auto good_fut = good_promise.get_future();
         auto bad_fut = bad_promise.get_future();
 
-        std::ignore = [
-            &test
-        ](auto&& good_promise, auto&& bad_promise) mutable -> corey::Future<int>{
-            auto good = std::move(good_promise);
-            auto bad = std::move(bad_promise);
-
-            test.info("Good promise");
+        std::ignore = [](auto& log, auto good, auto bad) mutable -> corey::Future<int>{
+            log.info("Good promise");
             good.set();
-            test.info("yield");
+            log.info("yield");
             co_await corey::yield();
-            test.info("throwing exception");
-            co_return std::make_exception_ptr(std::runtime_error("Orpaned exception"));
-            test.info("Bad promise");
+            log.info("throwing exception");
+            co_return std::make_exception_ptr(std::runtime_error("Orphaned exception"));
+            log.info("Bad promise");
             bad.set();
-        }(std::move(good_promise), std::move(bad_promise));
+        }(test_log, std::move(good_promise), std::move(bad_promise));
 
-        test.info("wait good");
+        test_log.info("wait good");
         EXPECT_NO_THROW(co_await std::move(good_fut));
 
-        test.info("wait bad");
+        test_log.info("wait bad");
         EXPECT_THROW(co_await std::move(bad_fut), corey::BrokenPromise);
 
-        test.info("done");
-
-        auto output = logStream.str();
-        EXPECT_THAT(output, testing::HasSubstr("orphan: unhandled exception: Orpaned exception"));
+        test_log.info("done");
         co_return 0;
-    });
+    }, test_log);
 
+    auto output = logStream.str();
+    EXPECT_THAT(output, testing::HasSubstr("orphan: unhandled exception: Orphaned exception"));
     EXPECT_EQ(result, 0);
 }
 
@@ -323,50 +303,38 @@ TEST_F(LogTest, LogApplicationOrphanedExceptionWithAwaitException) {
     using ::testing::_;
     EXPECT_CALL(*console, write(_)).Times(testing::AtLeast(1));
 
-    std::stringstream logStream;
-    corey::Log test("test");
-
-    ON_CALL(*console, write(_)).WillByDefault([&logStream](std::span<const char> message) {
-        logStream.write(message.data(), message.size());
-        return message.size();
-    });
-
+    corey::Log test_log("test");
     corey::Application app(0, nullptr);
-    auto result = app.run([&](const corey::ParseResult&) -> corey::Future<int> {
+    auto result = app.run([](const corey::ParseResult&, corey::Log& test_log) -> corey::Future<int> {
 
         corey::Promise<> good_promise, bad_promise;
 
         auto good_fut = good_promise.get_future();
         auto bad_fut = bad_promise.get_future();
 
-        std::ignore = [
-            &test
-        ](auto&& good_promise, auto&& bad_promise) mutable -> corey::Future<>{
-            auto good = std::move(good_promise);
-            auto bad = std::move(bad_promise);
-
-            test.info("Good promise");
+        std::ignore = [](auto& log, auto good, auto bad) mutable -> corey::Future<>{
+            log.info("Good promise");
             good.set();
             co_await corey::yield();
-            test.info("throwing exception");
-            co_await std::make_exception_ptr(std::runtime_error("Orpaned exception"));
-            test.info("Bad promise");
+            log.info("throwing exception");
+            co_await std::make_exception_ptr(std::runtime_error("Orphaned exception"));
+            log.info("Bad promise");
             bad.set();
-        }(std::move(good_promise), std::move(bad_promise));
+        }(test_log, std::move(good_promise), std::move(bad_promise));
 
-        test.info("wait good");
+        test_log.info("wait good");
         EXPECT_NO_THROW(co_await std::move(good_fut));
 
-        test.info("wait bad");
+        test_log.info("wait bad");
         EXPECT_THROW(co_await std::move(bad_fut), corey::BrokenPromise);
 
-        test.info("done");
+        test_log.info("done");
 
-        auto output = logStream.str();
-        EXPECT_THAT(output, testing::HasSubstr("orphan: unhandled exception: Orpaned exception"));
         co_return 0;
-    });
+    }, test_log);
 
+    auto output = logStream.str();
+    EXPECT_THAT(output, testing::HasSubstr("orphan: unhandled exception: Orphaned exception"));
     EXPECT_EQ(result, 0);
 }
 
@@ -374,7 +342,7 @@ TEST_F(LogTest, LogSetDefaultSink) {
     using ::testing::_;
     EXPECT_CALL(*console, write(_)).Times(0);
 
-    auto new_sink = corey::Sink<void>::make<MockConsole>();
+    auto new_sink = corey::Sink::make<MockConsole>();
 
     corey::Log::set_default_sink(new_sink);
     corey::Log test("test");
@@ -406,7 +374,7 @@ TEST_F(LogTest, LogSetSink) {
     using ::testing::_;
     EXPECT_CALL(*console, write(_)).Times(0);
 
-    auto new_sink = corey::Sink<void>::make<MockConsole>();
+    auto new_sink = corey::Sink::make<MockConsole>();
 
     corey::Log test("test");
     test.set_sink(new_sink);
