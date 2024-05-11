@@ -58,6 +58,7 @@ private:
     io_uring _ring;
     Defer<> _poll_routine;
     int _pending = 0;
+    int _inflight = 0;
 };
 
 } // namespace corey

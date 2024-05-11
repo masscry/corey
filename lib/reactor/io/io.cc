@@ -147,6 +147,7 @@ void IoEngine::submit_pending() {
             return;
         }
         _pending -= ret;
+        _inflight += ret;
     }
 }
 
@@ -157,6 +158,7 @@ void IoEngine::complete_ready() {
         comp->set(cqe->res);
         comp->~Promise();
         io_uring_cqe_seen(&_ring, cqe);
+        --_inflight;
     }
 }
 
