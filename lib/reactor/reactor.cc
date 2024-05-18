@@ -1,5 +1,6 @@
 #include "reactor/reactor.hh"
 #include "reactor/coroutine.hh"
+#include "task.hh"
 #include "utils/common.hh"
 
 namespace corey {
@@ -30,14 +31,14 @@ Reactor::~Reactor() {
 
 void Reactor::run() {
     for (auto& routine: _routines) {
-        routine.second.try_execute();
+        routine.second();
     }
 
     bool new_has_progress = false;
     for (auto task = _tasks.begin(); task != _tasks.end();) {
         auto next = std::next(task);
-        if (task->try_execute()) {
-            _tasks.erase_and_dispose(task, [](Executable* task) { delete task; });
+        if ((*task)()) {
+            _tasks.erase_and_dispose(task, [](auto* task) { delete task; });
             new_has_progress = true;
         }
         task = next;
@@ -45,11 +46,11 @@ void Reactor::run() {
     _has_progress = new_has_progress;
 }
 
-void Reactor::add_task(Executable&& task) {
-    _tasks.push_back(*new Executable(std::move(task)));
+void Reactor::add_task(Task&& task) {
+    _tasks.push_back(*new Task(std::move(task)));
 }
 
-Defer<> Reactor::add_routine(Executable&& routine) {
+Defer<> Reactor::add_routine(Routine&& routine) {
     uint16_t id = _routines.size();
     auto start = id;
     while(_routines.count(id++)) { COREY_ASSERT(id != start); }

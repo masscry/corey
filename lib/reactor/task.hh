@@ -9,14 +9,21 @@
 
 namespace corey {
 
+template<typename Ret, typename... Args>
 struct AbstractExecutable {
-    virtual bool execute() = 0;
+    virtual Ret execute(Args&&...) = 0;
     virtual ~AbstractExecutable() = 0;
 };
-using UPAbstractExecutable = std::unique_ptr<AbstractExecutable>;
+
+template <typename Ret, typename... Args>
+AbstractExecutable<Ret, Args...>::~AbstractExecutable() = default;
+
+template<typename Ret, typename... Args>
+using UPAbstractExecutable = std::unique_ptr<AbstractExecutable<Ret, Args...>>;
 
 using AutoLinkBase = boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::auto_unlink>>;
 
+template<typename Ret, typename... Args>
 class Executable : public AutoLinkBase {
 public:
 
@@ -28,25 +35,28 @@ public:
     Executable& operator=(Executable&& other) noexcept = default;
     ~Executable() = default;
 
-    bool try_execute() {
-        return _model->execute();
+    Ret operator()(Args&&... args) {
+        return _model->execute(std::forward<Args>(args)...);
     }
 
-    AbstractExecutable& get_impl() noexcept { return *_model; }
+    AbstractExecutable<Ret, Args...>& get_impl() noexcept { return *_model; }
 
-    template<typename Impl, typename... Args>
-    static Executable make(Args&&... args) {
-        return Executable(std::make_unique<Impl>(std::forward<Args>(args)...));
+    template<typename Impl, typename... MakeArgs>
+    static Executable make(MakeArgs&&... args) {
+        return Executable(std::make_unique<Impl>(std::forward<MakeArgs>(args)...));
     }
 
 private:
-    explicit Executable(UPAbstractExecutable&& model) noexcept : _model(std::move(model)) {}
-    UPAbstractExecutable _model;
+    explicit Executable(UPAbstractExecutable<Ret, Args...>&& model) noexcept : _model(std::move(model)) {}
+    UPAbstractExecutable<Ret, Args...> _model;
 };
+
+using Task = Executable<bool>;
+using Routine = Executable<void>;
 
 template<typename Func>
 auto make_task(Func&& func) {
-    struct SimpleTask final : public AbstractExecutable{
+    struct SimpleTask final : public AbstractExecutable<bool> {
         Func _func;
         SimpleTask(Func&& func) : _func(std::forward<Func>(func)) {}
         bool execute() override {
@@ -54,12 +64,12 @@ auto make_task(Func&& func) {
             return true;
         }
     };
-    return Executable::make<SimpleTask>(std::forward<Func>(func));
+    return Task::make<SimpleTask>(std::forward<Func>(func));
 }
 
 template<typename ExeFunc, typename IsReadyFunc>
 auto make_task(ExeFunc&& exeFunc, IsReadyFunc&& isReadyFunc) {
-    struct MaybeReadyTask final : public AbstractExecutable {
+    struct MaybeReadyTask final : public AbstractExecutable<bool> {
         ExeFunc _exeFunc;
         IsReadyFunc _isReadyFunc;
         MaybeReadyTask(ExeFunc&& exeFunc, IsReadyFunc&& isReadyFunc)
@@ -73,7 +83,7 @@ auto make_task(ExeFunc&& exeFunc, IsReadyFunc&& isReadyFunc) {
             return true;
         }
     };
-    return Executable::make<MaybeReadyTask>(
+    return Task::make<MaybeReadyTask>(
         std::forward<ExeFunc>(exeFunc),
         std::forward<IsReadyFunc>(isReadyFunc)
     );
@@ -81,15 +91,14 @@ auto make_task(ExeFunc&& exeFunc, IsReadyFunc&& isReadyFunc) {
 
 template<typename Func>
 auto make_routine(Func&& func) {
-    struct SimpleRoutine final : public AbstractExecutable {
+    struct SimpleRoutine final : public AbstractExecutable<void> {
         Func _func;
         SimpleRoutine(Func&& func) : _func(std::forward<Func>(func)) {}
-        bool execute() override {
+        void execute() override {
             _func();
-            return false;
         }
     };
-    return Executable::make<SimpleRoutine>(std::forward<Func>(func));
+    return Routine::make<SimpleRoutine>(std::forward<Func>(func));
 }
 
 } // namespace corey

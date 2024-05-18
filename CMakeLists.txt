@@ -30,7 +30,7 @@ add_library(setup INTERFACE)
 target_compile_features(setup INTERFACE cxx_std_20)
 target_compile_options(setup
     INTERFACE
-        -Wall -Wextra -Werror -g -fPIC
+        -Wall -Wextra -Werror -g -fPIC -fsanitize=address -fsanitize=leak -fsanitize=undefined
         $<$<CXX_COMPILER_ID:GNU>:-fdiagnostics-color=always>
         $<$<CXX_COMPILER_ID:Clang>:-fcolor-diagnostics>
 )
@@ -38,7 +38,7 @@ target_include_directories(setup
     INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/lib
 )
-target_link_options(setup INTERFACE -rdynamic)
+target_link_options(setup INTERFACE -rdynamic -fsanitize=address -fsanitize=leak -fsanitize=undefined)
 
 add_subdirectory(lib)
 add_subdirectory(src)

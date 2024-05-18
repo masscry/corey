@@ -165,7 +165,7 @@ TEST_F(LogTest, Task) {
         corey::Log log("task");
         log.info("hello!");
     });
-    task.try_execute();
+    task();
 }
 
 TEST_F(LogTest, EmptyName) {

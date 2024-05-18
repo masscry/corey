@@ -1,5 +1,6 @@
 #include "file.hh"
 
+#include "reactor/io/io.hh"
 #include "reactor/coroutine.hh"
 
 #include <cstdint>

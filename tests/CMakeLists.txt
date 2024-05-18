@@ -22,6 +22,7 @@ target_sources(base_test
         test_app.cc
         test_sync.cc
         test_socket.cc
+        test_signal.cc
 )
 
 target_link_libraries(base_test

@@ -3,9 +3,12 @@
 #include "reactor/reactor.hh"
 #include "reactor/task.hh"
 
+#include <cstdint>
 #include <liburing.h>
 
 #include <linux/time_types.h>
+#include <sys/epoll.h>
+#include <sys/signalfd.h>
 
 namespace corey {
 
@@ -41,13 +44,21 @@ public:
     Future<int> connect(int fd, const sockaddr* addr, socklen_t addrlen);
     Future<int> accept(int fd, sockaddr* addr, socklen_t* addrlen);
     Future<int> setsockopt(int fd, int level, int optname, const void* optval, socklen_t optlen);
+    Future<int> poll_add(int fd, uint32_t events);
+
     Future<int> bind(int fd, const sockaddr* addr, socklen_t addrlen);
     Future<int> listen(int fd, int backlog);
+
+    Future<int> signalfd(int fd, const sigset_t* mask, int flags);
+    Future<int> epoll_ctl(int op, int fd, uint32_t event, void* data);
+    Future<int> epoll_wait(int fd, std::span<epoll_event> events, int timeout);
 
 private:
 
     void submit_pending();
     void complete_ready();
+
+    Future<> run_poller();
 
     template<typename Func, typename... Args>
     inline Promise<int>* prepare(Func&& func, Args&&... args);
@@ -57,6 +68,9 @@ private:
 
     io_uring _ring;
     Defer<> _poll_routine;
+    std::optional<Future<>> _handle_poller;
+    int _epoll_fd;
+
     int _pending = 0;
     int _inflight = 0;
     Reactor& _reactor;

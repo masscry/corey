@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <liburing.h>
+#include "fmt/ostream.h"
 #include "liburing/io_uring.h"
 
 #include "common/macro.hh"
@@ -20,6 +21,11 @@
 #include <memory>
 
 #include <fmt/std.h>
+
+#include <sys/epoll.h>
+#include <sys/poll.h>
+#include <sys/signalfd.h>
+#include <unistd.h>
 
 namespace corey {
 
@@ -55,11 +61,17 @@ IoEngine::IoEngine(Reactor& reactor) : _reactor(reactor) {
         submit_pending();
         complete_ready();
     }));
+    _epoll_fd = epoll_create1(EPOLL_CLOEXEC);
+    if (_epoll_fd < 0) {
+        throw std::system_error(errno, std::system_category(), "epoll_create1 failed");
+    }
     _instance = this;
 }
 
 IoEngine::~IoEngine() {
     COREY_ASSERT(_pending == 0);
+    COREY_ASSERT(_inflight == 0);
+    ::close(_epoll_fd);
     io_uring_queue_exit(&_ring);
     _instance = nullptr;
 }
@@ -127,6 +139,10 @@ Future<int> IoEngine::accept(int fd, sockaddr* addr, socklen_t* addrlen) {
     return prepare(io_uring_prep_accept, fd, addr, addrlen, 0)->get_future();
 }
 
+Future<int> IoEngine::poll_add(int fd, uint32_t events) {
+    return prepare(io_uring_prep_poll_add, fd, events)->get_future();        
+}
+
 Future<int> IoEngine::setsockopt(int fd, int level, int optname, const void* optval, socklen_t optlen) {
     return posix_call(::setsockopt, fd, level, optname, optval, optlen);
 }
@@ -137,6 +153,25 @@ Future<int> IoEngine::bind(int fd, const sockaddr* addr, socklen_t addrlen) {
 
 Future<int> IoEngine::listen(int fd, int backlog) {
     return posix_call(::listen, fd, backlog);
+}
+
+Future<int> IoEngine::signalfd(int fd, const sigset_t* mask, int flags) {
+    _handle_poller = run_poller();
+    return posix_call(::signalfd, fd, mask, flags);
+}
+
+Future<int> IoEngine::epoll_ctl(int op, int fd, uint32_t event, void* data) {
+    epoll_event evt {
+        .events = event,
+        .data = {
+            .ptr = data
+        }
+    };
+    return posix_call(::epoll_ctl, _epoll_fd, op, fd, &evt);
+}
+
+Future<int> IoEngine::epoll_wait(int fd, std::span<epoll_event> events, int timeout) {
+    return posix_call(::epoll_wait, fd, events.data(), events.size(), timeout);
 }
 
 void IoEngine::submit_pending() {
@@ -177,6 +212,25 @@ void IoEngine::complete_ready() {
     }
 }
 
+Future<> IoEngine::run_poller() {
+    while (true) {
+        auto ret = co_await poll_add(_epoll_fd, POLLIN);
+        if (ret < 0) {
+            co_await std::make_exception_ptr(std::system_error(-ret, std::system_category(), "poll_add failed"));
+        }
+        epoll_event events[max_events];
+        ret = co_await epoll_wait(_epoll_fd, std::span(events, max_events), -1);
+        if (ret < 0) {
+            co_await std::make_exception_ptr(std::system_error(-ret, std::system_category(), "epoll_wait failed"));
+        }
+        fmt::print("epoll_wait returned {}\n", ret);
+        for (auto evt: std::span(events, ret)) {
+            auto promise = reinterpret_cast<Promise<uint32_t>*>(evt.data.ptr);
+            promise->set(static_cast<uint32_t>(evt.events));
+        }
+    }
+}
+
 template<typename Func, typename... Args>
 inline Promise<int>* IoEngine::prepare(Func&& func, Args&&... args) {
     if (auto sqe = io_uring_get_sqe(&_ring)) {
@@ -190,10 +244,11 @@ inline Promise<int>* IoEngine::prepare(Func&& func, Args&&... args) {
 
 template<typename Func, typename... Args>
 inline Future<int> IoEngine::posix_call(Func&& func, Args&&... args) {
-    if (auto ret = std::invoke(std::forward<Func>(func), std::forward<Args>(args)...); ret < 0) {
+    auto ret = std::invoke(std::forward<Func>(func), std::forward<Args>(args)...);
+    if (ret < 0) {
         return make_ready_future<int>(-errno);
     }
-    return make_ready_future<int>(0);
+    return make_ready_future<int>(ret);
 }
 
 } // namespace corey

@@ -2,6 +2,4 @@
 
 namespace corey {
 
-AbstractExecutable::~AbstractExecutable() = default;
-
 } // namespace corey
