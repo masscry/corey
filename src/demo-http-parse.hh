@@ -28,7 +28,7 @@ struct fmt::formatter<std::map<Key, Value>> {
     constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
     template <typename FormatContext>
-    auto format(const std::map<Key, Value>& map, FormatContext& ctx) {
+    auto format(const std::map<Key, Value>& map, FormatContext& ctx) const {
         format_to(ctx.out(), "{{\n");
         for (auto it = map.begin(); it != map.end(); ++it) {
             if (it != map.begin()) {
@@ -45,7 +45,7 @@ struct fmt::formatter<corey::http::Request> {
     constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
     template <typename FormatContext>
-    auto format(const corey::http::Request& request, FormatContext& ctx) {
+    auto format(const corey::http::Request& request, FormatContext& ctx) const {
         return format_to(ctx.out(),
             "Request:\n"
             "  Method: {}\n"

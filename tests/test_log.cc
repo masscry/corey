@@ -5,6 +5,8 @@
 #include <corey.hh>
 
 #include <fmt/format.h>
+#include <fmt/std.h>
+#include <fmt/ranges.h>
 
 #include <type_traits>
 #include <sstream>

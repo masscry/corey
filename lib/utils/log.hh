@@ -91,7 +91,7 @@ struct fmt::formatter<corey::Log::Level> {
     }
     
     template<typename FormatContext>
-    auto format(corey::Log::Level const& level, FormatContext& ctx) {
+    auto format(corey::Log::Level const& level, FormatContext& ctx) const {
         switch(level) {
             case corey::Log::Level::debug:
                 return fmt::format_to(ctx.out(), "debug");
