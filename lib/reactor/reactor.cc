@@ -1,6 +1,13 @@
 #include "reactor/reactor.hh"
+#include "fmt/base.h"
 #include "reactor/coroutine.hh"
-#include "utils/common.hh"
+#include "common.hh"
+
+#include <iostream>
+
+#include <fmt/printf.h>
+#include <fmt/format.h>
+#include <fmt/std.h>
 
 namespace corey {
 
@@ -29,8 +36,8 @@ Reactor::~Reactor() {
 }
 
 void Reactor::run() {
-    for (auto& routine: _routines) {
-        routine.second.try_execute();
+    if (!_new_tasks.empty()) {
+        _tasks.splice(_tasks.end(), _new_tasks);
     }
 
     bool new_has_progress = false;
@@ -43,10 +50,14 @@ void Reactor::run() {
         task = next;
     }
     _has_progress = new_has_progress;
+
+    for (auto& routine: _routines) {
+        routine.second.try_execute();
+    }
 }
 
 void Reactor::add_task(Executable&& task) {
-    _tasks.push_back(*new Executable(std::move(task)));
+    _new_tasks.push_back(*new Executable(std::move(task)));
 }
 
 Defer<> Reactor::add_routine(Executable&& routine) {

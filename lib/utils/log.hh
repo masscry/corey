@@ -1,7 +1,7 @@
 #pragma once
 
+#include "common.hh"
 #include "common/sink.hh"
-#include "common/macro.hh"
 
 #include <fmt/core.h>
 

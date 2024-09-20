@@ -1,7 +1,7 @@
 #include "sink.hh"
 #include "console.hh"
 #include "common/defer.hh"
-#include "utils/common.hh"
+#include "common.hh"
 #include "utils/log.hh"
 
 #include "fmt/core.h"
@@ -97,6 +97,16 @@ void log_orphaned_exception(std::exception_ptr exp) {
         log.error("unhandled exception: unknown");
         print_stack_trace(log);
     }
+}
+
+namespace internal {
+
+void panic(std::string_view text) {
+    static Log log("panic");
+    log.error("{}", text);
+    __builtin_trap();
+}
+
 }
 
 } // namespace corey

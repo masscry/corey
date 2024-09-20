@@ -9,6 +9,8 @@ namespace corey {
 
 using namespace std::chrono_literals;
 
+Future<> sleep(std::chrono::nanoseconds, Context&);
+
 Future<> sleep(std::chrono::nanoseconds);
 
 } // namespace corey

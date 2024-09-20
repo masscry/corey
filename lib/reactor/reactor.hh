@@ -37,6 +37,7 @@ private:
     void remove_routine(int id);
 
     TaskList _tasks;
+    TaskList _new_tasks;
     RoutineList _routines;
     bool _has_progress;
 };

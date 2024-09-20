@@ -8,6 +8,7 @@
 #include "reactor/coroutine.hh"
 #include "reactor/timer.hh"
 #include "reactor/sync.hh"
+#include "reactor/when.hh"
 
 #include "common/sink.hh"
 #include "common/console.hh"

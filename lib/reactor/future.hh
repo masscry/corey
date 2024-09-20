@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils/common.hh"
+#include "common.hh"
 
 #include <algorithm>
 #include <array>
@@ -11,12 +11,7 @@
 #include <stdexcept>
 #include <type_traits>
 
-#include <boost/smart_ptr/intrusive_ptr.hpp>
-
 namespace corey {
-
-template<typename Ptr>
-using IntrusivePtr = boost::intrusive_ptr<Ptr>;
 
 class FutureException: public std::exception {
 public:
